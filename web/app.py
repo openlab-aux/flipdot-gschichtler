@@ -49,7 +49,7 @@ def del_from_queue(id):
         abort(401)
     else:
         cursor = g.db.cursor()
-        rows = cursor.execute('delete from queue where id = ?', id).rowcount
+        rows = cursor.execute('delete from queue where id = ?', (id,)).rowcount
         g.db.commit()
         if rows == 1:
             return "Deleted", 204
