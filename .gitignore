@@ -1,6 +1,6 @@
 ### Project ###
 
-queue-interface/queue.db
+web/queue.db
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
