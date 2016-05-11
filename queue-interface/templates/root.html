@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <title>OpenLab Flipdots</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="stylesheet" type="text/css" href="/static/bootstrap-3.3.6-dist/css/bootstrap.min.css"/>
+  </head>
+  <body>
+    <div class="container">
+      <div class="jumbotron">
+        <h1>Text an die Flipdots senden</h1>
+
+        <form action="/queue/add" method="POST">
+          <div class="form-group">
+            <input placeholder="Zu anzeigender Text" type="text" name="text" id="text" class="form-control"/>
+          </div>
+          <button type="submit" class="btn btn-default">Senden</button>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
