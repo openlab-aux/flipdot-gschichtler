@@ -2,6 +2,8 @@
 
 It gschichtles Flipdots over da interwebz.
 
+![](./screen.png)
+
 ## Configuring / Deployment
 ### Web Interface
 
