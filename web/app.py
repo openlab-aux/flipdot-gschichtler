@@ -3,7 +3,7 @@ from flask import Flask, render_template, g, request, url_for, abort, redirect, 
 
 DATABASE = './queue.db'
 TOKEN = '7bf7303b847f359f32bff627519e4dd4f4bbc2d0638a758d81bbb156c5d30569'
-DEBUG = True
+DEBUG = False
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -41,7 +41,7 @@ def add_to_queue():
 
         return render_template("success.html", queuelength=queuelength)
     else:
-        return render_template("error.html", error="Du hast einen leeren Text abgesendet!")
+        return render_template("error.html", error="Du hast einen leeren Text abgesendet!"), 400
 
 @app.route("/queue/del/<id>", methods=['DELETE'])
 def del_from_queue(id):
