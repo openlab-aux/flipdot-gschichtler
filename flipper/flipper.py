@@ -3,7 +3,7 @@ import scrolltext
 from time import sleep
 
 TOKEN = '7bf7303b847f359f32bff627519e4dd4f4bbc2d0638a758d81bbb156c5d30569'
-BASEURL = 'http://localhost:5000'
+BASEURL = 'http://flipdot.openlab-augsburg.de/'
 
 def get_queue():
     r = requests.get(BASEURL + '/queue')
