@@ -1,3 +1,4 @@
+import os
 import requests
 import scrolltext
 from time import sleep
@@ -31,7 +32,7 @@ while True:
     id = nextentry['id']
     text = nextentry['text']
 
-    print(u"Drawing string \"{}\" with id {}".format(text, id))
+    print("Drawing string \"{}\" with id {}".format(text.encode("utf-8"), id))
 
     draw_string(text)
 
