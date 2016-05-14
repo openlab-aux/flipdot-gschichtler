@@ -10,7 +10,7 @@ It gschichtles Flipdots over da interwebz.
 * Init db `sqlite3 queue.db < schema.sql`
 * Change token
 * Set `DEBUG = False`
-* Deploy flask app in production™
+* Deploy flask app in production™ (using Python 2 or Python 3)
 * ???
 * PROFIT
 
@@ -18,7 +18,7 @@ It gschichtles Flipdots over da interwebz.
 
 * Set correct hostname and port `scrolltext.py`
 * Set correct token and baseurl in `flipper.py`
-* Start `flipper.py`
+* Start `flipper.py` using Python 2
 * ???
 * PROFIT
 
@@ -74,3 +74,37 @@ Status codes: Delete text with `<id>`. Yields no response if 204.
 Method: `DELETE`
 
 Params: `token` (must be same as `TOKEN` in `app.py`)
+
+## Systemd Services
+
+```
+[Unit]
+Description=Flipdot web control client
+After=network.target
+
+[Service]
+WorkingDirectory=/home/flipdots/flipdot-gschichtler/flipper
+ExecStart=/usr/bin/python2 flipper.py
+User=flipdots
+Group=users
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```
+[Unit]
+Description=Webinterface for OpenLab flipdots
+After=network.target
+
+[Service]
+WorkingDirectory=/srv/http/flipdot-gschichtler/web
+ExecStart=/usr/bin/gunicorn -w 4 -b 127.0.0.1:9000 app:app
+User=http
+Group=http
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
+```
