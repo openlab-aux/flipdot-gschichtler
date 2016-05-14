@@ -6,7 +6,7 @@ import fileinput
 UDPHOST="flipdot.openlab.lan"
 UDPPORT=2323
 
-FPS = 8
+FPS = 10
 STEPS = 1
 INVERT=True
 
