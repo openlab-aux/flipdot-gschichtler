@@ -25,7 +25,10 @@ while True:
     queue = get_queue()
 
     while len(queue) < 1:
-        queue = get_queue()
+	try:
+            queue = get_queue()
+        except:
+            pass
         sleep(1)
     
     nextentry = queue[0]
