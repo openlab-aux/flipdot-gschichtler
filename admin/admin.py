@@ -6,6 +6,7 @@ import os
 
 URL = "http://flipdot.openlab-augsburg.de"
 TOKEN = '7bf7303b847f359f32bff627519e4dd4f4bbc2d0638a758d81bbb156c5d30569'
+CONFIG_ENV_VAR = "CONFIG_FILE"
 
 print(os.path.dirname(os.path.abspath(__file__)))
 jinja_env = j.Environment(loader=j.FileSystemLoader(
@@ -16,6 +17,7 @@ template = jinja_env.get_template("admin.html")
 # template = jinja_env.get_template(
 
 app = f.Flask(__name__)
+app.config.from_envvar(CONFIG_ENV_VAR)
 
 @app.route("/", methods=["GET"])
 def root():
