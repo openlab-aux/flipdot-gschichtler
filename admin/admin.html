@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- reload every 3 seconds, because we can -->
+    <meta http-equiv="refresh" content="3">
+    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" /> -->
+    <link rel="stylesheet" href="/static/bootstrap.min.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div id="queue">
+        <table class="table table-striped">
+          <thead>
+            <th>id</th>
+            <th>text</th>
+            <th>delete</th>
+          </thead>
+          <tbody>
+            {% for item in queue %}
+            <tr>
+              <td>{{item.id}}</td>
+              <td>{{item.text}}</td>
+              <td><form id="{{item.id}}" action="">
+                <button type="submit" formaction="/{{item.id}}" formmethod="DELETE">X</button>
+                <input type="hidden" value="{{token}}" />
+              </form></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>
