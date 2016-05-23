@@ -22,6 +22,13 @@ It gschichtles Flipdots over da interwebz.
 * ???
 * PROFIT
 
+### Admin Interface
+
+* install `flask`, `requests` and `jinja2`
+* start `admin/admin.py` using python 2
+* ???
+* PROFIT
+
 ## API Documentation
 
 Texts and can be added and deleted via a REST-ish API:
