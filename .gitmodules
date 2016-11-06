@@ -1,0 +1,3 @@
+[submodule "flipper/flipdots"]
+	path = flipper/flipdots
+	url = https://github.com/openlab-aux/flipdots
