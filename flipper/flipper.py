@@ -33,9 +33,10 @@ while True:
 
     print("Drawing string \"{}\" with id {}".format(text.encode("utf-8"), id))
 
-    scroll_text("localhost", 2323, text)
+    scroll_text("localhost", 2323, "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", text)
 
     (sucess, status) = delete_queue_entry(id)
+
     if sucess:
         print("Deleted queue item {}".format(id))
     else:
