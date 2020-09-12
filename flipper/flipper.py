@@ -1,6 +1,6 @@
 import os
 import requests
-from scroll_text import scroll_text
+from flipdots.scripts.scroll_text import scroll_text
 from time import sleep
 
 TOKEN = '7bf7303b847f359f32bff627519e4dd4f4bbc2d0638a758d81bbb156c5d30569'
