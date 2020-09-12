@@ -1,0 +1,13 @@
+CC=musl-clang
+CFLAGS="-W -Wall -Wextra -pedantic -std=c99"
+CFLAGS="$CFLAGS -static"
+
+# disable some warnings not caused by us
+CFLAGS="$CFLAGS -Wno-unused-command-line-argument"   # nix musl-clang
+CFLAGS="$CFLAGS -Wno-gnu-empty-initializer"          # httpserver.h
+
+# debugging
+CFLAGS="$CFLAGS -g -Og"
+#CFLAGS="$CFLAGS -fsanitize=address -fno-omit-frame-pointer"
+
+# vim: set ft=sh:
