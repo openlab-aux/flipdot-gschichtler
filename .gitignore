@@ -1,6 +1,7 @@
 /result*
 
 *.o
+vgcore.*
 /warteraum/.redo
 /warteraum/warteraum
 /warteraum/test/test_queue
