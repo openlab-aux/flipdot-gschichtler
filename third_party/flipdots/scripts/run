@@ -1,0 +1,1 @@
+while [ true ]; do netcat -6 -l -p 2323 > /tmp/foo-image && ./display /tmp/foo-image; done

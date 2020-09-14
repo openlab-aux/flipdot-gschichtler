@@ -1,0 +1,11 @@
+[Unit]
+Description=Flipdot UDP receiver
+After=network.target
+
+[Service]
+ExecStart=/opt/flipdot/udp-receiver
+ExecStopPost=/opt/flipdot/pins_off
+#Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
