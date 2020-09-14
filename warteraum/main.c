@@ -20,7 +20,7 @@
 
 // Global state
 
-static struct queue *flip_queue;
+static struct queue flip_queue;
 static struct http_server_s* server;
 
 void cleanup(int signum) {
@@ -154,10 +154,10 @@ void handle_request(http_request_t *request) {
 }
 
 int main(void) {
-  flip_queue = NULL;
+  queue_new(&flip_queue);
 
-  queue_push(&flip_queue, "hello", sizeof("hello") - 1);
-  queue_push(&flip_queue, "world", sizeof("world") - 1);
+  queue_append(&flip_queue, "hello", sizeof("hello") - 1);
+  queue_append(&flip_queue, "world", sizeof("world") - 1);
 
   signal(SIGTERM, cleanup);
   signal(SIGINT, cleanup);
