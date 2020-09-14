@@ -56,7 +56,7 @@ void queue_remove(struct queue *queue, unsigned int id) {
   }
 }
 
-void queue_append(struct queue *queue, char *str, size_t size) {
+void queue_append(struct queue *queue, const char *str, size_t size) {
   struct queue_stack *new = malloc(sizeof(struct queue_stack));
 
   if(new == NULL) {

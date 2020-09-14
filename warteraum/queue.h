@@ -12,7 +12,7 @@ struct queue {
 
 void queue_new(struct queue *);
 void queue_pop(struct queue *);
-void queue_append(struct queue *, char *, size_t);
+void queue_append(struct queue *, const char *, size_t);
 void queue_remove(struct queue *, unsigned int);
 void queue_free(struct queue);
 
