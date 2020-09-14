@@ -1,2 +1,1 @@
-redo test/test_queue
-redo warteraum
+redo-ifchange warteraum test/test_queue

@@ -20,12 +20,17 @@ rec {
     clangStdenvNoLibs.mkDerivation rec {
       pname = "warteraum";
 
-      inherit src version;
-
       sourceRoot = sourceName + "/warteraum";
 
-      nativeBuildInputs = [ redo-sh ];
+      inherit src version;
+
+      nativeBuildInputs = [ redo-c ];
       buildInputs = [ musl ];
+
+      # make whole source tree writeable for redo
+      postUnpack = ''
+        chmod -R u+w "$sourceRoot/.."
+      '';
 
       # musl, static linking
       patchPhase = ''
