@@ -1,0 +1,43 @@
+#!/usr/bin/bash
+
+WHITE=24
+BLACK=23
+STROBE=25
+DATA_COL=14
+DATA_ROW=8
+CLK_COL=18
+CLK_ROW=15
+
+echo "pulling all pins low..."
+
+echo $WHITE >    /sys/class/gpio/export
+echo $BLACK >    /sys/class/gpio/export
+echo $STROBE >   /sys/class/gpio/export
+echo $DATA_COL > /sys/class/gpio/export
+echo $DATA_ROW > /sys/class/gpio/export
+echo $CLK_COL >  /sys/class/gpio/export
+echo $CLK_ROW >  /sys/class/gpio/export
+
+echo "out" > /sys/class/gpio/gpio$WHITE/direction
+echo "out" > /sys/class/gpio/gpio$BLACK/direction
+echo "out" > /sys/class/gpio/gpio$STROBE/direction
+echo "out" > /sys/class/gpio/gpio$DATA_COL/direction
+echo "out" > /sys/class/gpio/gpio$DATA_ROW/direction
+echo "out" > /sys/class/gpio/gpio$CLK_COL/direction
+echo "out" > /sys/class/gpio/gpio$CLK_ROW/direction
+
+echo "0" > /sys/class/gpio/gpio$WHITE/value
+echo "0" > /sys/class/gpio/gpio$BLACK/value
+echo "0" > /sys/class/gpio/gpio$STROBE/value
+echo "0" > /sys/class/gpio/gpio$DATA_COL/value
+echo "0" > /sys/class/gpio/gpio$DATA_ROW/value
+echo "0" > /sys/class/gpio/gpio$CLK_COL/value
+echo "0" > /sys/class/gpio/gpio$CLK_ROW/value
+
+echo $WHITE >    /sys/class/gpio/unexport
+echo $BLACK >    /sys/class/gpio/unexport
+echo $STROBE >   /sys/class/gpio/unexport
+echo $DATA_COL > /sys/class/gpio/unexport
+echo $DATA_ROW > /sys/class/gpio/unexport
+echo $CLK_COL >  /sys/class/gpio/unexport
+echo $CLK_ROW >  /sys/class/gpio/unexport
