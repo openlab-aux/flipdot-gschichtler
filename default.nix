@@ -7,15 +7,15 @@ let
   gi = nix-gitignore;
   root = ./.;
   sourceName = "flipdot-gschichtler-source";
-in
 
-rec {
   src = builtins.path {
     path = root;
     name = sourceName;
     filter = gi.gitignoreFilter (builtins.readFile ./.gitignore) root;
   };
+in
 
+{
   warteraum =
     clangStdenvNoLibs.mkDerivation rec {
       pname = "warteraum";
