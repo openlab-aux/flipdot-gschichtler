@@ -1,0 +1,139 @@
+flipdot-gschichtler
+===================
+sterni
+September 2020
+
+`flipdot-gschichtler` allows to display text on the OpenLab's
+flipdot panel in an user- and machine-friendly way without
+fear of interfering with others and without requiring direct
+connectivity to the panel.
+
+Components
+----------
+
+`flipdot-gschichtler` consists of the following three components:
+
+- `warteraum` manages a queue of text snippets which is accessible and
+  manipulable via a public REST API. Users will directly or indirectly
+  use it to send text to the flipdot panel.
+- `anzeigetafel` is a daemon which runs on a machine with direct
+  connectivity to the flipdot panel. It monitors the queue of
+  `warteraum` and displays new incoming text on the panel and
+  deletes it from the queue afterwards.
+- `bahnhofshalle` is a web fronted which allows users to view and
+  manipulate the queue of `warteraum` from their browser.
+
+API Documentation
+-----------------
+
+API `v2`
+~~~~~~~~
+
+GET `/api/v2/queue`
+^^^^^^^^^^^^^^^^^^^
+
+|=============================================
+| Request Content-Type  | none
+| Response Content-Type | `application/json`
+| Authentication        | no
+|=============================================
+
+This endpoint returns the current queue in the
+following JSON format. `length` corresponds with
+the length of the queue array. `queue` is ordered
+by time of each item's addition, i. e. the first
+item is next up to be displayed. The supplied `id`
+may be used to delete the entries via the `del`
+endpoint.
+
+-------------------------
+{
+  "queue": [
+    {
+      "id": 1,
+      "text": "world"
+    },
+    {
+      "id": 0,
+      "text": "hello"
+    }
+  ],
+  "length": 2
+}
+-------------------------
+
+|====================================
+| HTTP Status  | Meaning
+| 200          | Success
+|====================================
+
+POST `/api/v2/queue/add`
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+DELETE `/api/v2/queue/<id>`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+API `v1`
+~~~~~~~
+
+GET `/api/v1/queue`
+^^^^^^^^^^^^^^^^^^^
+
+Same as `/api/v2/queue`, since v2 didn't introduce any changes.
+
+POST `/api/v1/queue/add`
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+|=============================================
+| Request Content-Type  | `application/x-www-form-urlencoded`
+| Response Content-Type | `text/html`
+| Authentication        | no
+|=============================================
+
+This is the legacy endpoint to add text to the queue. It enabled
+interacting with it via a `<form>` in the old web app. The form
+sent as part of the request should have the following fields:
+
+|=============================================
+| `text` | text to be added to the queue
+|=============================================
+
+[NOTE]
+Additional data may render the request invalid in the current implementation.
+
+The response format has been changed since the previous implementation.
+I sincerly hope that nobody scraped the resulting page.
+
+|=============================================
+| HTTP Status  | Meaning
+| 200          | Success, text added
+| 400          | Illegal method or malformed request
+|=============================================
+
+DELETE `/api/v1/queue/del/<id>`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+|=============================================
+| Request Content-Type  | `application/x-www-form-urlencoded`
+| Response Content-Type | none
+| Authentication        | yes (see below)
+|=============================================
+
+This endpoint can be used to delete queue entries, e. g. after
+they have been displayed on the panel. The request should send
+a form with the following fields as request body in order to
+authenticate itself:
+
+|=============================================
+| `token` | API token of the application
+|=============================================
+
+[NOTE]
+Additional data may render the request invalid in the current implementation.
+
+|=============================================
+| HTTP Status  | Meaning
+| 204          | Success, queue entry deleted
+| 400          | Illegal method or malformed request
+| 401          | Unauthorized API token
+| 404          | No queue entry with given `id`
+|=============================================
