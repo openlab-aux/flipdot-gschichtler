@@ -1,5 +1,8 @@
 #include <stdbool.h>
 
+// feel free to adjust for your unsigned int
+#define QUEUE_MAX_ID 0xffff
+
 struct queue_stack {
   unsigned int id;
   size_t string_size;

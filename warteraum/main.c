@@ -139,6 +139,12 @@ enum warteraum_result response_queue_add_v1(http_request_t *request, http_respon
     { FORM_TOKEN_STRING, &text }
   };
 
+  if(flip_queue.last->id == QUEUE_MAX_ID) {
+    response_queue_add_v1_error(500, request, response);
+    // we lie here, as we don't want to use the default JSON response
+    return WARTERAUM_OK;
+  }
+
   http_string_t content_type = http_request_header(request, "Content-Type");
   http_string_t method = http_request_method(request);
 
