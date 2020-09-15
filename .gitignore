@@ -4,6 +4,7 @@
 vgcore.*
 /warteraum/all
 /warteraum/warteraum
+/warteraum/hashtoken
 /warteraum/test/test_queue
 
 # redo-sh
