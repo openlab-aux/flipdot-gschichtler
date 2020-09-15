@@ -11,8 +11,10 @@
 #include "queue.h"
 #include "routing.h"
 #include "form.h"
+#include "scrypt.h"
 
 #include "v1_static.h" /* static strings for v1 api */
+#include "tokens.h"    /* valid api tokens */
 
 #define LISTEN_PORT 9000
 
@@ -24,6 +26,9 @@
 
 #define HTTP_STRING_EQ(a, b) \
   (a.len == b.len && strncmp(a.buf, b.buf, a.len) == 0)
+
+#define HTTP_STRING_IS(a, s) \
+  (a.len == sizeof(s) - 1 && strncmp(a.buf, s, a.len) == 0)
 
 // Global state
 
@@ -132,7 +137,6 @@ enum warteraum_result response_queue_add_v1(http_request_t *request, http_respon
   http_string_t field_name;
   http_string_t text;
 
-  const http_string_t exp_field_name = STATIC_HTTP_STRING("text");
   const struct form_token_spec request_spec[] = {
     { FORM_TOKEN_STRING, &field_name },
     { FORM_TOKEN_EQUAL_SIGN, NULL },
@@ -159,7 +163,7 @@ enum warteraum_result response_queue_add_v1(http_request_t *request, http_respon
 
   bool parse_res = form_parse(body, request_spec, sizeof(request_spec) / sizeof(struct form_token_spec));
 
-  if(!parse_res || !HTTP_STRING_EQ(exp_field_name, field_name)) {
+  if(!parse_res || !HTTP_STRING_IS(field_name, "text")) {
     response_queue_add_v1_error(400, request, response);
     // we lie here, as we don't want to use the default JSON response
     return WARTERAUM_OK;
@@ -184,6 +188,91 @@ enum warteraum_result response_queue_add_v1(http_request_t *request, http_respon
   http_respond(request, response);
 
   return WARTERAUM_OK;
+}
+
+// DELETE /api/v1/queue/del/<id>
+enum warteraum_result response_queue_del_v1(http_string_t id_str, http_request_t *request, http_response_t *response) {
+  http_string_t method = http_request_method(request);
+
+  if(!HTTP_STRING_IS(method, "DELETE")) {
+    return WARTERAUM_BAD_REQUEST;
+  }
+
+  http_string_t body = http_request_body(request);
+  http_string_t token;
+  http_string_t field_name;
+
+  const struct form_token_spec request_spec[] = {
+    { FORM_TOKEN_STRING, &field_name },
+    { FORM_TOKEN_EQUAL_SIGN, NULL },
+    { FORM_TOKEN_STRING, &token }
+  };
+
+  bool parse_res = form_parse(body, request_spec, sizeof(request_spec) / sizeof(struct form_token_spec));
+
+  if(!parse_res || !HTTP_STRING_IS(field_name, "token")) {
+    return WARTERAUM_BAD_REQUEST;
+  }
+
+  uint8_t hashed[SCRYPT_OUTPUT_LEN];
+
+  int hash_result = HASH_TOKEN(token.buf, token.len, hashed);
+
+  if(hash_result != 0) {
+    return WARTERAUM_INTERNAL_ERROR;
+  }
+
+  bool token_matches = false;
+  size_t token_count = sizeof(tokens) / (sizeof(uint8_t) * SCRYPT_OUTPUT_LEN);
+
+  for(size_t i = 0; i < token_count && !token_matches; i++) {
+    token_matches = true;
+    for(size_t j = 0; j < SCRYPT_OUTPUT_LEN && token_matches; j++) {
+      token_matches = tokens[i][j] == hashed[j];
+    }
+  }
+
+  if(!token_matches) {
+    return WARTERAUM_UNAUTHORIZED;
+  }
+
+  char *id_zero_terminated = malloc(sizeof(char) * (id_str.len + 1));
+  if(id_zero_terminated == NULL) {
+    return WARTERAUM_INTERNAL_ERROR;
+  }
+
+  memcpy(id_zero_terminated, id_str.buf, id_str.len);
+  id_zero_terminated[id_str.len] = '\0';
+
+  errno = 0;
+  unsigned long int id = strtoul(id_zero_terminated, NULL, 10);
+
+  free(id_zero_terminated);
+
+  // check for conversion errors
+  // also abort if id is greater than max id
+  if(errno != 0 || id > QUEUE_MAX_ID) {
+    return WARTERAUM_BAD_REQUEST;
+  }
+
+  if(flip_queue.first == NULL || flip_queue.last == NULL) {
+    return WARTERAUM_NOT_FOUND;
+  }
+
+  // don't iterate through the queue if the id is out of range
+  if(flip_queue.first->id > id || flip_queue.last->id < id) {
+    return WARTERAUM_NOT_FOUND;
+  }
+
+  bool found = queue_remove(&flip_queue, id);
+
+  if(found) {
+    http_response_status(response, 204);
+    http_respond(request, response);
+    return WARTERAUM_OK;
+  } else {
+    return WARTERAUM_NOT_FOUND;
+  }
 }
 
 void handle_request(http_request_t *request) {
@@ -211,6 +300,8 @@ void handle_request(http_request_t *request) {
             status = response_queue(request, response);
           } else if(segment_match_last(3, "add", segs, count)) {
             status = response_queue_add_v1(request, response);
+          } else if(segment_match(3, "del", segs, count) && count == 5) {
+            status = response_queue_del_v1(segs[4], request, response);
           }
         }
       } else if(segment_match(1, "v2", segs, count)) {
