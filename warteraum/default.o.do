@@ -1,5 +1,7 @@
-source ./build_config
-redo-ifchange ./build_config
+conf="$(dirname "$0")/build_config"
+source "$conf"
+redo-ifchange "$conf"
+
 redo-ifchange "$2.c"
 
 if [[ -e "$2.h" ]]; then
