@@ -153,8 +153,8 @@ enum warteraum_result response_queue_add_v1(http_request_t *request, http_respon
   http_string_t content_type = http_request_header(request, "Content-Type");
   http_string_t method = http_request_method(request);
 
-  if(strncmp(content_type.buf, "application/x-www-form-urlencoded", content_type.len) != 0 ||
-     strncmp(method.buf, "POST", method.len) != 0) {
+  if(!HTTP_STRING_IS(content_type, "application/x-www-form-urlencoded") ||
+     !HTTP_STRING_IS(method, "POST")) {
     return WARTERAUM_BAD_REQUEST;
   }
 
@@ -193,9 +193,11 @@ enum warteraum_result response_queue_add_v1(http_request_t *request, http_respon
 
 // DELETE /api/v1/queue/del/<id>
 enum warteraum_result response_queue_del_v1(http_string_t id_str, http_request_t *request, http_response_t *response) {
+  http_string_t content_type = http_request_header(request, "Content-Type");
   http_string_t method = http_request_method(request);
 
-  if(!HTTP_STRING_IS(method, "DELETE")) {
+  if(!HTTP_STRING_IS(content_type, "application/x-www-form-urlencoded") ||
+     !HTTP_STRING_IS(method, "POST")) {
     return WARTERAUM_BAD_REQUEST;
   }
 
