@@ -8,11 +8,11 @@ vgcore.*
 /warteraum/test/test_queue
 
 # redo-sh
-/warteraum/.redo
+.redo
 # redo-c
-/warteraum/.dep.*
-/warteraum/.depend.*
-/warteraum/.target.*
+.dep.*
+.depend.*
+.target.*
 
 web/queue.db
 __pycache__/
