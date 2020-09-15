@@ -28,7 +28,7 @@ void queue_pop(struct queue *queue) {
   }
 }
 
-void queue_remove(struct queue *queue, unsigned int id) {
+bool queue_remove(struct queue *queue, unsigned int id) {
   struct queue_stack **p = &(queue->first);
   struct queue_stack *second_to_last = NULL;
   bool search = true;
@@ -54,6 +54,8 @@ void queue_remove(struct queue *queue, unsigned int id) {
       p = &((*p)->tail);
     }
   }
+
+  return !search;
 }
 
 void queue_append(struct queue *queue, const char *str, size_t size) {

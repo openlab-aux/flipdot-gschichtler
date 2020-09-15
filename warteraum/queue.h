@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 struct queue_stack {
   unsigned int id;
   size_t string_size;
@@ -13,7 +15,7 @@ struct queue {
 void queue_new(struct queue *);
 void queue_pop(struct queue *);
 void queue_append(struct queue *, const char *, size_t);
-void queue_remove(struct queue *, unsigned int);
+bool queue_remove(struct queue *, unsigned int);
 void queue_free(struct queue);
 
 #define queue_foreach(input, head)                              \
