@@ -55,7 +55,7 @@ enum warteraum_result {
   WARTERAUM_INTERNAL_ERROR = 4
 };
 
-void response_error(enum warteraum_result e, http_request_t *request, http_response_t *response) {
+void response_error(enum warteraum_result e, bool legacy_response, http_request_t *request, http_response_t *response) {
   // response_error should never be called with
   // WARTERAUM_OK, so this is considered a error 500
   const http_string_t errors[] = {
@@ -68,21 +68,31 @@ void response_error(enum warteraum_result e, http_request_t *request, http_respo
 
   const int codes[] = { 500, 400, 401, 404, 500 };
 
-  jso_stream s;
+  if(legacy_response) {
+    // /api/v1/queue/add returns a HTML response
+    // we emulate this behavior, however not exactly
 
-  jso_init_growable(&s);
+    http_response_status(response, codes[e]);
+    http_response_header(response, "Content-Type", "text/html");
+    http_response_body(response, QUEUE_ADD_V1_FAILURE, sizeof(QUEUE_ADD_V1_FAILURE) - 1);
+    http_respond(request, response);
+  } else {
+    jso_stream s;
 
-  jso_object(&s);
-  JSO_STATIC_PROP(&s, "error");
-  jso_string_len(&s, errors[e].buf, (size_t) errors[e].len);
-  jso_end_object(&s);
+    jso_init_growable(&s);
 
-  http_response_status(response, codes[e]);
-  http_response_header(response, "Content-Type", "application/json");
-  http_response_body(response, s.data, (int) s.pos);
-  http_respond(request, response);
+    jso_object(&s);
+    JSO_STATIC_PROP(&s, "error");
+    jso_string_len(&s, errors[e].buf, (size_t) errors[e].len);
+    jso_end_object(&s);
 
-  jso_close(&s);
+    http_response_status(response, codes[e]);
+    http_response_header(response, "Content-Type", "application/json");
+    http_response_body(response, s.data, (int) s.pos);
+    http_respond(request, response);
+
+    jso_close(&s);
+  }
 }
 
 // GET /api/v1/queue
@@ -126,13 +136,6 @@ enum warteraum_result response_queue(http_request_t *request, http_response_t *r
 }
 
 // POST /api/v1/queue/add
-void response_queue_add_v1_error(int status, http_request_t *request, http_response_t *response) {
-  http_response_status(response, status);
-  http_response_header(response, "Content-Type", "text/html");
-  http_response_body(response, QUEUE_ADD_V1_FAILURE, sizeof(QUEUE_ADD_V1_FAILURE) - 1);
-  http_respond(request, response);
-}
-
 enum warteraum_result response_queue_add_v1(http_request_t *request, http_response_t *response) {
   http_string_t field_name;
   http_string_t text;
@@ -144,9 +147,7 @@ enum warteraum_result response_queue_add_v1(http_request_t *request, http_respon
   };
 
   if(flip_queue.last->id == QUEUE_MAX_ID) {
-    response_queue_add_v1_error(500, request, response);
-    // we lie here, as we don't want to use the default JSON response
-    return WARTERAUM_OK;
+    return WARTERAUM_INTERNAL_ERROR;
   }
 
   http_string_t content_type = http_request_header(request, "Content-Type");
@@ -154,9 +155,7 @@ enum warteraum_result response_queue_add_v1(http_request_t *request, http_respon
 
   if(strncmp(content_type.buf, "application/x-www-form-urlencoded", content_type.len) != 0 ||
      strncmp(method.buf, "POST", method.len) != 0) {
-    response_queue_add_v1_error(400, request, response);
-    // we lie here, as we don't want to use the default JSON response
-    return WARTERAUM_OK;
+    return WARTERAUM_BAD_REQUEST;
   }
 
   http_string_t body = http_request_body(request);
@@ -164,18 +163,20 @@ enum warteraum_result response_queue_add_v1(http_request_t *request, http_respon
   bool parse_res = form_parse(body, request_spec, sizeof(request_spec) / sizeof(struct form_token_spec));
 
   if(!parse_res || !HTTP_STRING_IS(field_name, "text")) {
-    response_queue_add_v1_error(400, request, response);
-    // we lie here, as we don't want to use the default JSON response
-    return WARTERAUM_OK;
+    return WARTERAUM_BAD_REQUEST;
   }
 
   char *decoded = malloc(sizeof(char) * text.len);
+
+  if(decoded == NULL) {
+    return WARTERAUM_INTERNAL_ERROR;
+  }
+
   int decoded_len = urldecode(text, decoded, sizeof(char) * text.len);
 
   if(decoded_len <= 0) {
-    response_queue_add_v1_error(decoded == NULL ? 500 : 400, request, response);
-    // prevent json response
-    return WARTERAUM_OK;
+    free(decoded);
+    return WARTERAUM_BAD_REQUEST;
   }
 
   queue_append(&flip_queue, decoded, (size_t) decoded_len);
@@ -289,6 +290,7 @@ void handle_request(http_request_t *request) {
   int count = split_segments(target, &segs);
 
   enum warteraum_result status = WARTERAUM_NOT_FOUND;
+  bool v1_html_response = false;
 
   if(count < 0) {
     fputs("Split failure\n", stderr);
@@ -299,6 +301,8 @@ void handle_request(http_request_t *request) {
           if(count == 3) {
             status = response_queue(request, response);
           } else if(segment_match_last(3, "add", segs, count)) {
+            // this endpoint returns html in /api/v1
+            v1_html_response = true;
             status = response_queue_add_v1(request, response);
           } else if(segment_match(3, "del", segs, count) && count == 5) {
             status = response_queue_del_v1(segs[4], request, response);
@@ -317,7 +321,7 @@ void handle_request(http_request_t *request) {
   free(segs);
 
   if(status != WARTERAUM_OK) {
-    response_error(status, request, response);
+    response_error(status, v1_html_response, request, response);
   }
 }
 
