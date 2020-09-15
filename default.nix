@@ -13,33 +13,17 @@ let
     name = sourceName;
     filter = gi.gitignoreFilter (builtins.readFile ./.gitignore) root;
   };
-in
 
-{
-  warteraum =
-    clangStdenvNoLibs.mkDerivation rec {
+  warteraumDrv = { stdenv, redo, scrypt }:
+    stdenv.mkDerivation rec {
       pname = "warteraum";
-
       sourceRoot = sourceName + "/warteraum";
 
       inherit src version;
 
-      nativeBuildInputs = [ redo-c ];
-      buildInputs = [ musl ];
-
       # make whole source tree writeable for redo
       postUnpack = ''
         chmod -R u+w "$sourceRoot/.."
-      '';
-
-      # musl, static linking
-      patchPhase = ''
-        substituteInPlace ./build_config \
-          --replace clang musl-clang \
-          --replace gnu99 c99
-        cat >> ./build_config << EOF
-        CFLAGS="\$CFLAGS -static"
-        EOF
       '';
 
       buildPhase = "redo";
@@ -50,7 +34,31 @@ in
       installPhase = ''
         install -Dm755 warteraum -t $out/bin
       '';
+
+      nativeBuildInputs = [ redo ];
+
+      buildInputs = [ scrypt ];
     };
+in
+
+rec {
+  warteraum-static = (pkgsMusl.callPackage warteraumDrv {
+    stdenv = pkgsMusl.clangStdenv;
+    redo = redo-sh;
+  }).overrideAttrs (old: {
+    # musl, static linking
+    patchPhase = ''
+      substituteInPlace ./build_config --replace gnu99 c99
+      cat >> ./build_config << EOF
+      CFLAGS="\$CFLAGS -static"
+      EOF
+    '';
+  });
+
+  warteraum = callPackage warteraumDrv {
+    stdenv = clangStdenv;
+    redo = redo-sh;
+  };
 
   pythonShell =
     let
