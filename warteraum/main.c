@@ -49,8 +49,6 @@ void cleanup(int signum) {
     queue_free(flip_queue);
     free(server);
     exit(EXIT_SUCCESS);
-  } else {
-    fputs("Unexpected signal\n", stderr);
   }
 }
 
@@ -86,6 +84,11 @@ enum warteraum_result {
   WARTERAUM_UNAUTHORIZED = 2,
   WARTERAUM_NOT_FOUND = 3,
   WARTERAUM_INTERNAL_ERROR = 4
+};
+
+enum warteraum_version {
+  WARTERAUM_API_V1,
+  WARTERAUM_API_V2
 };
 
 void response_error(enum warteraum_result e, bool legacy_response, http_request_t *request, http_response_t *response) {
@@ -128,9 +131,10 @@ void response_error(enum warteraum_result e, bool legacy_response, http_request_
   }
 }
 
-// GET /api/v1/queue
-// GET /api/v2/queue
-enum warteraum_result response_queue(http_request_t *request, http_response_t *response) {
+// GET /api/{v1, v2}/queue
+enum warteraum_result response_queue(enum warteraum_version v, http_request_t *request, http_response_t *response) {
+  (void) v; // surpress warning for now
+
   unsigned int queue_length = 0;
   jso_stream s;
   jso_init_growable(&s);
@@ -168,8 +172,8 @@ enum warteraum_result response_queue(http_request_t *request, http_response_t *r
   return WARTERAUM_OK;
 }
 
-// POST /api/v1/queue/add
-enum warteraum_result response_queue_add_v1(http_request_t *request, http_response_t *response) {
+// POST /api/{v1,v2}/queue/add
+enum warteraum_result response_queue_add(enum warteraum_version version, http_request_t *request, http_response_t *response) {
   http_string_t field_name;
   http_string_t text;
 
@@ -216,16 +220,42 @@ enum warteraum_result response_queue_add_v1(http_request_t *request, http_respon
 
   free(decoded);
 
-  http_response_status(response, 200);
-  http_response_header(response, "Content-Type", "text/html");
-  http_response_body(response, QUEUE_ADD_V1_SUCCESS, sizeof(QUEUE_ADD_V1_SUCCESS) - 1);
-  http_respond(request, response);
+  if(flip_queue.last == NULL) {
+    return WARTERAUM_INTERNAL_ERROR;
+  }
+
+  if(version == WARTERAUM_API_V1) {
+    http_response_status(response, 200);
+    http_response_header(response, "Content-Type", "text/html");
+    http_response_body(response, QUEUE_ADD_V1_SUCCESS, sizeof(QUEUE_ADD_V1_SUCCESS) - 1);
+    http_respond(request, response);
+  } else {
+    jso_stream s;
+    jso_init_growable(&s);
+
+    jso_object(&s);
+    JSO_STATIC_PROP(&s, "id");
+    jso_uint(&s, flip_queue.last->id);
+    JSO_STATIC_PROP(&s, "text");
+    jso_string_len(&s, flip_queue.last->string, flip_queue.last->string_size);
+    jso_end_object(&s);
+
+    http_response_status(response, 200);
+    http_response_header(response, "Content-Type", "application/json");
+    http_response_body(response, s.data, (int) s.pos);
+    http_respond(request, response);
+
+    jso_close(&s);
+  }
 
   return WARTERAUM_OK;
 }
 
 // DELETE /api/v1/queue/del/<id>
-enum warteraum_result response_queue_del_v1(http_string_t id_str, http_request_t *request, http_response_t *response) {
+// DELTE /api/v2/queue/<id>
+enum warteraum_result response_queue_del(http_string_t id_str, enum warteraum_version v, http_request_t *request, http_response_t *response) {
+  (void) v; // surpress warning for now
+
   http_string_t content_type = http_request_header(request, "Content-Type");
   http_string_t method = http_request_method(request);
 
@@ -315,28 +345,38 @@ void handle_request(http_request_t *request) {
   int count = split_segments(target, &segs);
 
   enum warteraum_result status = WARTERAUM_NOT_FOUND;
+  enum warteraum_version api_version;
   bool v1_html_response = false;
 
   if(count < 0) {
-    fputs("Split failure\n", stderr);
+    status = WARTERAUM_INTERNAL_ERROR;
   } else {
     if(segment_match(0, "api", segs, count)) {
       if(segment_match(1, "v1", segs, count)) {
+        api_version = WARTERAUM_API_V1;
+
         if(segment_match(2, "queue", segs, count)) {
           if(count == 3) {
-            status = response_queue(request, response);
+            status = response_queue(api_version, request, response);
           } else if(segment_match_last(3, "add", segs, count)) {
             // this endpoint returns html in /api/v1
             v1_html_response = true;
-            status = response_queue_add_v1(request, response);
+            status = response_queue_add(api_version, request, response);
           } else if(segment_match(3, "del", segs, count) && count == 5) {
-            status = response_queue_del_v1(segs[4], request, response);
+            status = response_queue_del(segs[4], api_version, request, response);
           }
         }
       } else if(segment_match(1, "v2", segs, count)) {
+        api_version = WARTERAUM_API_V2;
+
         if(segment_match(2, "queue", segs, count)) {
           if(count == 3) {
-            status = response_queue(request, response);
+            status = response_queue(api_version, request, response);
+          } else if(segment_match_last(3, "add", segs, count)) {
+            status = response_queue_add(api_version, request, response);
+          } else if(count == 4) {
+            // /api/v2/queue/<id>
+            status = response_queue_del(segs[3], api_version, request, response);
           }
         }
       }
@@ -352,9 +392,6 @@ void handle_request(http_request_t *request) {
 
 int main(void) {
   queue_new(&flip_queue);
-
-  queue_append(&flip_queue, "hello", sizeof("hello") - 1);
-  queue_append(&flip_queue, "world", sizeof("world") - 1);
 
   signal(SIGTERM, cleanup);
   signal(SIGINT, cleanup);
