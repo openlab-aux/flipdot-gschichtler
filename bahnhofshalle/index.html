@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>flipdot-gschichtler</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style.css" type="text/css">
+    <script src="main.js"></script>
+  </head>
+  <body>
+    <header>
+      <img src="openlab-logo.png" id="openlab-logo">
+      <div id="heading">
+        <h1>flipdot-gschichtler</h1>
+      </div>
+      </hgroup>
+    </header>
+    <main>
+      <section id="send-new">
+        <h2>display your <span id="display-what">text</span> on the flipdot panel</h2>
+        <form id="send-form" action="/api/v1/queue/add" method="post" enctype="application/x-www-form-urlencoded">
+          <div class="input-button">
+            <input name="text" id="text" type="text" placeholder="Text">
+            <input type="submit" value="Send" id="submit">
+          </div>
+        </form>
+      </section>
+      <section id="view-queue">
+        <h2>queue</h2>
+        <noscript>
+          <p>
+            Sorry, this doesn't work without JavaScript, but
+            do feel free to use the
+            <a href="https://github.com/openlab-aux/flipdot-gschichtler#api-documentation">REST API</a>
+            directly!
+          </p>
+        </noscript>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <td>id</td>
+                <td>text</td>
+                <td>action</td>
+              </tr>
+            </thead>
+            <tbody id="queue-container">
+
+            </tbody>
+          </table>
+        </div>
+        <div id="controls">
+          <div>
+            <button id="refresh-queue">Refresh</button>
+          </div>
+          <div class="input-button">
+            <input type="password" id="api-token" placeholder="API Token">
+            <button id="save-api-token">Save</button>
+          </div>
+        </div>
+      </section>
+      <section id="faq">
+        <h2>faq</h2>
+
+        <h3>What the hell is this?</h3>
+
+        <p>
+          flipdot-gschichtler is a set of network applications which allow
+          you to display text snippets on the flipdot panel inside OpenLab
+          Augsburg without being inside its network. If you're wondering
+          what a “flipdot panel” is supposed to be, here's a
+          <a href="https://live.staticflickr.com/7217/13350824314_f1ccfaa777_k.jpg">
+            picture
+          </a>. Basically it's a display with pixels that are physically
+          flipped around using electromagnetic force.
+        </p>
+        <p>
+          This is useful if you want to send messages via an IRC bot or
+          annoy everyone who is present from the comfort of your own home.
+        </p>
+
+        <h3>How does it work?</h3>
+
+        <p>
+          This server provides a REST API which manages a queue of strings
+          waiting to be displayed. Using this API you, the user, can
+          add new strings to be displayed to the queue (this web
+          interface uses the API internally).
+        </p>
+        <p>
+          The queue is regualarly checked by a daemon in the local network
+          of the OpenLab which then uses the
+          <a href="https://github.com/openlab-aux/flipdots/blob/master/scripts/scroll_text.py"><code>
+            scroll_text.py
+          </code></a>
+          script to display the strings from the queue.
+        </p>
+
+        <h3>Where's the source code?</h3>
+        <p>
+          Hosted on GitHub:
+          <a href="https://github.com/openlab-aux/flipdot-gschichtler">
+            openlab-aux/flipdot-gschichtler
+          </a>
+        </p>
+
+        <h3>How do I use the API?</h3>
+
+        <p>
+          Long story short: <code>/api/v2/queue</code>
+          lets you view the current queue, send a
+          <code>POST</code> request to
+          <code>/api/v2/queue/add</code>
+          with a request body of
+          <code>text=&lt;my text&gt;</code>
+          to add text to the queue.
+        </p>
+        <p>
+          Long story long (not really): Read the
+          <a href="https://github.com/openlab-aux/flipdot-gschichtler#api-documentation">API documentation</a>.
+        </p>
+
+        <h3>Can I get an API token?</h3>
+
+        <p>
+          Authentication is only necessary to delete queue entries,
+          so chances are you don't need one. If you need one regardless,
+          ask
+          <a href="https://wiki.openlab-augsburg.de/Mensch_sternenseemann">
+            sterni
+          </a>.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

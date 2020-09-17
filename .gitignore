@@ -14,6 +14,9 @@ vgcore.*
 .depend.*
 .target.*
 
+/bahnhofshalle/main.js
+/bahnhofshalle/node_modules
+
 web/queue.db
 __pycache__/
 *.pyc

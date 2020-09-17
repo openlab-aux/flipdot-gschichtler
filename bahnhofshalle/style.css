@@ -1,0 +1,83 @@
+body {
+  font-family: sans-serif;
+  color: #333333; /* openlab text gray */
+  margin: 0;
+}
+
+header, main, footer {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+@media screen and (max-width: 800px) {
+  header {
+    align-items: center;
+    justify-content: space-around;
+  }
+}
+
+header {
+  padding: 5px 0;
+  border-bottom: 5px solid #e1e1e1;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+header img,
+#heading h1 {
+  max-height: 30px;
+  margin: auto 5px;
+  font-size: 20px;
+}
+
+a:visited, a:link {
+  color: #0088aa; /* openlab blue */
+}
+
+.table-container {
+  max-width: 100%;
+  overflow: auto;
+}
+
+#view-queue table {
+  width:100%;
+  border-spacing: 0;
+}
+
+#view-queue thead {
+  background-color: #e1e1e1;
+}
+
+#view-queue thead td,
+#view-queue tbody tr:nth-last-child(1) td {
+  border-bottom: 1px solid #333333;
+}
+
+#view-queue td {
+  margin: 0;
+  padding: 10px;
+}
+
+#view-queue td:nth-last-child(1) {
+  text-align: right;
+}
+
+.input-button {
+  display: flex;
+}
+
+.input-button input[type="text"] {
+  flex: 1;
+}
+
+#controls {
+  max-width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content:space-between;
+}
+
+#controls > div {
+  margin: 5px;
+}
