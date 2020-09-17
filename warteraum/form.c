@@ -87,6 +87,8 @@ int urldecode(struct http_string_s s, char *target, size_t size) {
       } else {
         return -1;
       }
+    } else if(c == '+') {
+      target[len - 1] = ' ';
     } else {
       target[len - 1] = c;
     }
