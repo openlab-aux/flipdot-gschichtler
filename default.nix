@@ -105,6 +105,11 @@ rec {
       dontStrip = true;
     };
 
+  overlay = callPackage ./nixos/overlay.nix {
+    inherit bahnhofshalle;
+    warteraum = warteraum-static;
+  };
+
   pythonShell =
     let
       pythonEnv = python3.withPackages (p: with p; [
