@@ -45,6 +45,30 @@ void cleanup(int signum) {
   }
 }
 
+// authentication
+
+bool authenticate(http_string_t token) {
+  uint8_t hashed[SCRYPT_OUTPUT_LEN];
+
+  int hash_result = HASH_TOKEN(token.buf, token.len, hashed);
+
+  if(hash_result != 0) {
+    return false;
+  }
+
+  bool token_matches = false;
+  size_t token_count = sizeof(tokens) / (sizeof(uint8_t) * SCRYPT_OUTPUT_LEN);
+
+  for(size_t i = 0; i < token_count && !token_matches; i++) {
+    token_matches = true;
+    for(size_t j = 0; j < SCRYPT_OUTPUT_LEN && token_matches; j++) {
+      token_matches = tokens[i][j] == hashed[j];
+    }
+  }
+
+  return token_matches;
+}
+
 // main routing logic
 
 enum warteraum_result {
@@ -217,22 +241,12 @@ enum warteraum_result response_queue_del_v1(http_string_t id_str, http_request_t
     return WARTERAUM_BAD_REQUEST;
   }
 
-  uint8_t hashed[SCRYPT_OUTPUT_LEN];
+  errno = 0;
+  bool token_matches = authenticate(token);
 
-  int hash_result = HASH_TOKEN(token.buf, token.len, hashed);
-
-  if(hash_result != 0) {
+  if(errno != 0) {
+    // scrypt failed
     return WARTERAUM_INTERNAL_ERROR;
-  }
-
-  bool token_matches = false;
-  size_t token_count = sizeof(tokens) / (sizeof(uint8_t) * SCRYPT_OUTPUT_LEN);
-
-  for(size_t i = 0; i < token_count && !token_matches; i++) {
-    token_matches = true;
-    for(size_t j = 0; j < SCRYPT_OUTPUT_LEN && token_matches; j++) {
-      token_matches = tokens[i][j] == hashed[j];
-    }
   }
 
   if(!token_matches) {
