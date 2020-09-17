@@ -26,6 +26,20 @@ Components
 API Documentation
 -----------------
 
+Caveats
+~~~~~~~
+
+Current form parsing is somewhat limited. Make sure you don't
+send any extra unnecessary form fields in your request body or
+`warteraum` may refuse to cooperate with you.
+
+The `v2` API may support `application/json` request bodies in
+the future. This is not yet the case.
+
+Any endpoint may also return different status codes than the
+ones listed here in unusual cases. These would typically
+be codes like 500 or 502.
+
 API `v2`
 ~~~~~~~~
 
@@ -70,8 +84,66 @@ endpoint.
 POST `/api/v2/queue/add`
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
+|=============================================
+| Request Content-Type  | `application/x-www-form-urlencoded`
+| Response Content-Type | `application/json`
+| Authentication        | no
+|=============================================
+
+This endpoints allows you to add text to the queue,
+it requires no authentication as it is a feature
+available to the public. There is also no rate
+limiting as of yet, but it may be implemented should
+it become necessary (hopefully not).
+
+The endpointed expects an urlencoded form as request
+body with the following field.
+
+|=============================================
+| `text` | text to be added to the queue
+|=============================================
+
+The response contains the queue entry consisting
+of its `text` and `id`:
+
+----------------------
+{
+  "id": 3,
+  "text": "hello"
+}
+----------------------
+
+|=============================================
+| HTTP Status  | Meaning
+| 200          | Success, text added
+| 400          | Illegal method or malformed request
+|=============================================
+
 DELETE `/api/v2/queue/<id>`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+|=============================================
+| Request Content-Type  | `application/x-www-form-urlencoded`
+| Response Content-Type | none
+| Authentication        | yes (see below)
+|=============================================
+
+This endpoint can be used to delete queue entries, e. g. after
+they have been displayed on the panel. The request should send
+a form with the following fields as request body in order to
+authenticate itself:
+
+|=============================================
+| `token` | API token of the application
+|=============================================
+
+|=============================================
+| HTTP Status  | Meaning
+| 204          | Success, queue entry deleted
+| 400          | Illegal method or malformed request
+| 401          | Unauthorized API token
+| 404          | No queue entry with given `id`
+|=============================================
 
 API `v1`
 ~~~~~~~
@@ -98,9 +170,6 @@ sent as part of the request should have the following fields:
 | `text` | text to be added to the queue
 |=============================================
 
-[NOTE]
-Additional data may render the request invalid in the current implementation.
-
 The response format has been changed since the previous implementation.
 I sincerly hope that nobody scraped the resulting page.
 
@@ -112,28 +181,31 @@ I sincerly hope that nobody scraped the resulting page.
 
 DELETE `/api/v1/queue/del/<id>`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-|=============================================
-| Request Content-Type  | `application/x-www-form-urlencoded`
-| Response Content-Type | none
-| Authentication        | yes (see below)
-|=============================================
 
-This endpoint can be used to delete queue entries, e. g. after
-they have been displayed on the panel. The request should send
-a form with the following fields as request body in order to
-authenticate itself:
+Same as `/api/v2/queue/<id>`, `v2` only changed the endpoint URL.
 
-|=============================================
-| `token` | API token of the application
-|=============================================
+Bug Bounty
+----------
 
-[NOTE]
-Additional data may render the request invalid in the current implementation.
+🤭
 
-|=============================================
-| HTTP Status  | Meaning
-| 204          | Success, queue entry deleted
-| 400          | Illegal method or malformed request
-| 401          | Unauthorized API token
-| 404          | No queue entry with given `id`
-|=============================================
+Contributing
+------------
+
+Help is welcome! Some things that remain to do:
+
+* More “funny” bits for the web frontend
+  (hint: see `const subjects` in `main.es6`)
+* Make `warteraum` accept `application/json` request bodies for the `v2`
+  API using http://www.catb.org/~esr/microjson/[microjson] (?).
+* Polish the web frontend, test across browsers
+* Improve font rendering on the flipdots, add emoji support
+* A completely new feature you thought of
+
+Legacy
+------
+
+Previously flipdot-gschichtler was based mostly on Python and Flask.
+You can check out the
+https://github.com/openlab-aux/flipdot-gschichtler/tree/1.0.0[old code]
+still by browsing the `1.0.0` tag.
