@@ -30,6 +30,15 @@
 #define HTTP_STRING_IS(a, s) \
   (a.len == sizeof(s) - 1 && strncmp(a.buf, s, a.len) == 0)
 
+// compare http_string against a static string,
+// but optionally allow an ;… after it.
+// i.e. application/json;charset=utf8 matches with
+// application/json
+#define MATCH_CONTENT_TYPE(a, s)                             \
+  ((size_t) a.len >= sizeof(s) - 1 &&                        \
+    strncmp(a.buf, s, sizeof(s) - 1) == 0 &&                 \
+    ((size_t) a.len < sizeof(s) || a.buf[sizeof(s) - 1] == ';'))
+
 // Global state
 
 static struct queue flip_queue;
@@ -177,7 +186,7 @@ enum warteraum_result response_queue_add_v1(http_request_t *request, http_respon
   http_string_t content_type = http_request_header(request, "Content-Type");
   http_string_t method = http_request_method(request);
 
-  if(!HTTP_STRING_IS(content_type, "application/x-www-form-urlencoded") ||
+  if(!MATCH_CONTENT_TYPE(content_type, "application/x-www-form-urlencoded") ||
      !HTTP_STRING_IS(method, "POST")) {
     return WARTERAUM_BAD_REQUEST;
   }
@@ -220,8 +229,8 @@ enum warteraum_result response_queue_del_v1(http_string_t id_str, http_request_t
   http_string_t content_type = http_request_header(request, "Content-Type");
   http_string_t method = http_request_method(request);
 
-  if(!HTTP_STRING_IS(content_type, "application/x-www-form-urlencoded") ||
-     !HTTP_STRING_IS(method, "POST")) {
+  if(!MATCH_CONTENT_TYPE(content_type, "application/x-www-form-urlencoded") ||
+     !HTTP_STRING_IS(method, "DELETE")) {
     return WARTERAUM_BAD_REQUEST;
   }
 
