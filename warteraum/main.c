@@ -146,7 +146,7 @@ enum warteraum_result response_queue_add_v1(http_request_t *request, http_respon
     { FORM_TOKEN_STRING, &text }
   };
 
-  if(flip_queue.last->id == QUEUE_MAX_ID) {
+  if(flip_queue.last != NULL && flip_queue.last->id == QUEUE_MAX_ID) {
     return WARTERAUM_INTERNAL_ERROR;
   }
 
