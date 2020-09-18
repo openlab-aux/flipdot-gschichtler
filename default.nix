@@ -42,6 +42,7 @@ let
 
       installPhase = ''
         install -Dm755 warteraum -t $out/bin
+        install -Dm755 hashtoken -t $out/bin
       '';
 
       nativeBuildInputs = [ redo ];
@@ -51,13 +52,12 @@ let
 in
 
 rec {
-  warteraum-static = (pkgsMusl.callPackage warteraumDrv {
-    stdenv = pkgsMusl.clangStdenv;
-    redo = redo-sh;
+  warteraum-static = (pkgsStatic.callPackage warteraumDrv {
+    # todo clang?
+    redo = pkgsStatic.redo-sh;
   }).overrideAttrs (old: {
     # musl, static linking
     patchPhase = ''
-      substituteInPlace ./build_config --replace gnu99 c99
       cat >> ./build_config << EOF
       CFLAGS="\$CFLAGS -static"
       EOF
