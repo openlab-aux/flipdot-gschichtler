@@ -1,7 +1,9 @@
-CC=clang
+if [[ -z "$CC" ]]; then
+  CC=clang
+fi
+
 CFLAGS="-W -Wall -Wextra -pedantic"
 CFLAGS="$CFLAGS -std=gnu99"
-#CFLAGS="$CFLAGS -static"
 #CFLAGS="$CFLAGS -Weverything"    # too verbose
 
 # disable some warnings not caused by us
@@ -15,6 +17,9 @@ CFLAGS="$CFLAGS -D_DEFAULT_SOURCE"
 
 # debugging
 CFLAGS="$CFLAGS -g -Og"
+
+# future work
 #CFLAGS="$CFLAGS -fsanitize=address -fno-omit-frame-pointer"
+#CFLAGS="$CFLAGS -static"
 
 # vim: set ft=sh:
