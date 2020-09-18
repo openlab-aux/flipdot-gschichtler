@@ -32,8 +32,8 @@ in {
         Type = "simple";
         ExecStart = "${fg.warteraum-static}/bin/warteraum";
         InAccessibleDirectories = "/";
-        # SystemCallFilter = "@default @basic-io @io-event @network-io fcntl @signal";
-        SystemCallFilter = "@system-service ~@mount";
+        # mmap and munmap are used by libscrypt-kdf
+        SystemCallFilter = "@default @basic-io @io-event @network-io fcntl @signal @process @timer brk mmap munmap";
         SystemCallArchitectures = "native";
         CapabilityBoundingSet = "";
 
