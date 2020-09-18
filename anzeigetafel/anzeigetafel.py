@@ -10,7 +10,7 @@ else:
     print("Usage: {} TOKEN".format(sys.argv[0]))
     exit(1)
 
-BASEURL = 'http://flipdot.openlab-augsburg.de/api/v2'
+BASEURL = 'https://flipdot.openlab-augsburg.de/api/v2'
 
 def get_queue():
     r = requests.get(BASEURL + '/queue')
