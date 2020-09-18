@@ -1,4 +1,7 @@
-{ pkgs ? (import <nixpkgs> {}) }:
+{ pkgs ? (import <nixpkgs> {})
+, scryptSalt ? null
+, apiTokens ? null
+}:
 
 with pkgs;
 
@@ -23,8 +26,35 @@ let
 
   y2nlib = yarn2nix.passthru.nixLib;
 
-  warteraumDrv = { stdenv, redo, scrypt }:
-    stdenv.mkDerivation rec {
+  stringSegments = n: s:
+    let
+      stringSplitter = i:
+        builtins.substring (i * 2) n s;
+      nonempty = s: builtins.stringLength s != 0;
+    in
+      builtins.filter nonempty (builtins.genList
+        stringSplitter ((builtins.stringLength s / n) + 1));
+
+  warteraumDrv = { stdenv, redo, scrypt, scryptSalt ? null, apiTokens ? null }:
+    let
+      saltBytes = stringSegments 2 scryptSalt;
+      saltArray =
+        let
+          commas = builtins.foldl' (a: b: a + ", 0x" + b) "" saltBytes;
+        in builtins.substring 1 (builtins.stringLength commas) commas;
+      saltReplace = lib.optionalString (scryptSalt != null) ''
+        sed -i '/^  0x/d' scrypt.h
+        sed -i '/const uint8_t salt/a\${saltArray}' scrypt.h
+      '';
+      tokensReplace = lib.optionalString (apiTokens != null) ''
+        redo hashtoken
+        sed -i '/^  {/d' tokens.h
+        sed -i '/^};/d' tokens.h
+        ${lib.concatMapStringsSep "\n"
+            (x: "./hashtoken ${x} >> tokens.h; echo -n ', ' >> tokens.h") apiTokens}
+        echo "};" >> tokens.h
+      '';
+    in stdenv.mkDerivation rec {
       pname = "warteraum";
       sourceRoot = sourceName + "/warteraum";
 
@@ -33,6 +63,15 @@ let
       # make whole source tree writeable for redo
       postUnpack = ''
         chmod -R u+w "$sourceRoot/.."
+      '';
+
+      patchPhase = ''
+        runHook prePatch
+
+        ${saltReplace}
+        ${tokensReplace}
+
+        runHook postPatch
       '';
 
       buildPhase = "redo";
@@ -55,9 +94,10 @@ rec {
   warteraum-static = (pkgsStatic.callPackage warteraumDrv {
     # todo clang?
     redo = pkgsStatic.redo-sh;
+    inherit scryptSalt apiTokens;
   }).overrideAttrs (old: {
     # musl, static linking
-    patchPhase = ''
+    postPatch = ''
       cat >> ./build_config << EOF
       CFLAGS="\$CFLAGS -static"
       EOF
@@ -67,6 +107,7 @@ rec {
   warteraum = callPackage warteraumDrv {
     stdenv = clangStdenv;
     redo = redo-sh;
+    inherit scryptSalt apiTokens;
   };
 
   bahnhofshalle =
@@ -123,4 +164,6 @@ rec {
 
       buildInputs = [ pythonEnv sqlite ];
     };
+
+  inherit stringSegments;
 }

@@ -5,7 +5,10 @@ with lib;
 let
   cfg = config.services.flipdot-gschichtler;
   fg  = flipdot-gschichtler;
-
+  withTokens = fg.warteraum-static.override {
+    inherit (cfg) apiTokens;
+    scryptSalt = cfg.salt;
+  };
 in {
   options = {
     services.flipdot-gschichtler = {
@@ -19,6 +22,24 @@ in {
           warteraum and bahnhofshalle.
         '';
       };
+
+      salt = mkOption {
+        type = types.str;
+        description = ''
+          Salt to use for hashing API tokens using scrypt_kdf(3).
+          Must be a string of hexadecimals which has a multiple of
+          2 as a length.
+        '';
+      };
+
+      apiTokens = mkOption {
+        type = types.listOf types.str;
+        default = [];
+        description = ''
+          List of API tokens to allow access.
+          May be strings of any length.
+        '';
+      };
     };
   };
 
@@ -30,7 +51,7 @@ in {
 
       serviceConfig = {
         Type = "simple";
-        ExecStart = "${fg.warteraum-static}/bin/warteraum";
+        ExecStart = "${withTokens}/bin/warteraum";
         InAccessibleDirectories = "/";
         # mmap and munmap are used by libscrypt-kdf
         SystemCallFilter = "@default @basic-io @io-event @network-io fcntl @signal @process @timer brk mmap munmap";
