@@ -34,7 +34,7 @@ def list2byte(l):
     return byte
 
 def array2packet(a):
-    return str(bytearray([list2byte(a[i*8:i*8+8]) for i in range(len(a)/8)]))
+    return bytearray([list2byte(a[i*8:i*8+8]) for i in range(int(len(a)/8))])
 
 def str2array(s,font):
     font = ImageFont.truetype(font=font,size=FONT_SIZE)
@@ -66,8 +66,8 @@ def render_frames(imgmap):
     display_width  = DISPLAY_SIZE[0]
     display_heigth = DISPLAY_SIZE[1]
 
-    imgmap_width    = len(imgmap) / display_heigth
-    scrollimg_width = imgmap_width + 2*display_width
+    imgmap_width    = int(len(imgmap) / display_heigth)
+    scrollimg_width = int(imgmap_width + 2*display_width)
 
     scroll_imgmap = [1 if INVERT else 0] * (scrollimg_width * display_heigth)
 
