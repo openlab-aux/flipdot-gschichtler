@@ -187,20 +187,150 @@ Bug Bounty
 Contributing
 ------------
 
-Help is welcome! Some things that remain to do:
+Help is welcome! Some things that remain to be done:
 
 * More “funny” bits for the web frontend
   (hint: see `const subjects` in `main.es6`)
+* Important: Documentation. Annoying sterni into doing it is also helping.
 * Make `warteraum` accept `application/json` request bodies for the `v2`
   API using http://www.catb.org/~esr/microjson/[microjson] (?).
+* Rewrite `json_output.c` to avoid licensing issue
 * Polish the web frontend, test across browsers
-* Improve font rendering on the flipdots, add emoji support
+* Refresh queue regularly in the web frontend
+* Write more tests
+* Full Unicode support by using Unifont on the flipdots
 * A completely new feature you thought of
 
-Legacy
-------
+Building
+--------
 
-Previously flipdot-gschichtler was based mostly on Python and Flask.
-You can check out the
-https://github.com/openlab-aux/flipdot-gschichtler/tree/1.0.0[old code]
-still by browsing the `1.0.0` tag.
+warteraum
+~~~~~~~~~
+
+Requirements:
+
+* a C99 compiler
+* `redo` (https://github.com/leahneukirchen/redo-c[redo-c] and
+  http://news.dieweltistgarnichtso.net/bin/redo-sh.html[redo-sh]
+  are known to work)
+* https://www.tarsnap.com/scrypt.html[`libscrypt-kdf`]
+
+------------------------
+cd warteraum
+redo all
+------------------------
+
+Build settings can be tweaked in `warteraum/build_config`.
+
+bahnhofshalle
+~~~~~~~~~~~~~
+
+The web frontend is written in EmcaScript 6, so we compile it to
+EcmaScript 5 (or “regular” JavaScript) for wider browser support.
+This is done using `babel`. The build is automated using `redo`
+although you can probably also run the command manually (see
+`default.js.do`) and dependencies are handled by `yarn`.
+
+------------------------
+cd bahnhofshalle
+yarn install
+yarn run redo main.js
+------------------------
+
+Note that all requests are sent using a `same-origin` policy,
+so you need to configure a reverse proxy to serve the web
+frontend and API simuntaneously for testing. You may take
+inspiration from the `nginx` configuration in
+`nixos/flipdot-gschichtler.nix`.
+
+A note on vendoring
+~~~~~~~~~~~~~~~~~~~
+
+To ease the submodule hassle, dependencies that are inconvenient to
+handle via a package manager are vendored or added as a
+https://www.atlassian.com/git/tutorials/git-subtree[git subtree].
+To avoid confusion these are located under `third_party` exclusively.
+
+Also be aware that different licensing terms may apply to code under
+this directory.
+
+Nix packages
+~~~~~~~~~~~~
+
+`default.nix` provides the following nix derivations which are
+ready to be installed:
+
+* `warteraum`: standard clang/glibc build of warteraum
+* `warteraum-static`: statically linked build of warteraum
+  using gcc and musl (used for the systemd service so we
+  can restrict file system access)
+* `bahnhofshalle`
+
+The warteraum attributes can be overriden to set the following
+values:
+
+* `apiTokens`: A list of api tokens to allow to authenticate with
+* `scryptSalt`: A string of hexadecimal digits which make up the
+  salt to use when hashing api tokens.
+
+`nixos/flipdot-gschichtler.nix` provides a NixOS module which
+defines `services.flipdot-gschichtler` to conveniently set up
+the server side with `warteraum` and `bahnhofshalle` behind
+a nginx reverse proxy. A minimal `configuration.nix` utilizing
+it could look like this:
+
+---------------
+{ pkgs, ... }:
+
+let
+  flipdot-gschichtler = import /path/to/flipdot-gschichtler {
+    inherit pkgs;
+  };
+
+in {
+  imports = [
+    /path/to/flipdot-gschichtler/nixos/flipdot-gschichtler.nix
+  ];
+
+  _module.args = { inherit flipdot-gschichtler; };
+
+  services.flipdot-gschichtler = {
+    enable = true;
+    virtualHost = "flipdot.openlab-augsburg.de";
+    apiTokens = [ ... ];
+    salt = "...";
+  };
+
+  services.nginx.enable = true;
+  security.acme = {
+    ....
+  };
+}
+---------------
+
+Changelog
+---------
+
+2.0.0 (WIP)
+^^^^^^^^^^^
+
+* Replace `admin` and `web` frontends with pure EcmaScript
+  frontend `bahnhofshalle`
+* Replace `web` API implementation with `warteraum`
+* Rename `flipper` to `anzeigetafel`
+* API:
+  * Move endpoints from `/` to `/api/v1/`
+  * `/api/v1/queue/add` HTML response changes, since no longer
+    used by the frontend (except when no JavaScript is available)
+  * Add cleaned up version of the API as `/api/v2`. This one is used
+    by `bahnhofshalle` and `anzeigetafel` and should be utilized by
+    clients going forward.
+* Deployment:
+  * Implement API/Frontend deployment as a NixOS service
+
+1.0.0
+^^^^^
+
+https://github.com/openlab-aux/flipdot-gschichtler/tree/1.0.0[Browse code]
+
+Initial Version: Flask and Python 2.7 based web interface.
