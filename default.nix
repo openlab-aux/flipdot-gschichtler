@@ -17,15 +17,6 @@ let
     filter = gi.gitignoreFilter (builtins.readFile ./.gitignore) root;
   };
 
-  yarn2nix = import (fetchFromGitHub {
-    owner  = "sternenseemann";
-    repo   = "yarn2nix";
-    rev    = "3811ffdc3b43a9ba8b8a7f7316399d8da90f8a38";
-    sha256 = "1r5f70qswrxzg0z4pk7v9l59aqnckrp70pxfplhyaq9vvys4f7l7";
-  }) { };
-
-  y2nlib = yarn2nix.passthru.nixLib;
-
   stringSegments = n: s:
     let
       stringSplitter = i:
@@ -114,39 +105,33 @@ rec {
 
   bahnhofshalle =
     let
-      deps = y2nlib.buildNodeDeps
-        (y2nlib.callYarnLock ./bahnhofshalle/yarn.lock { });
-      tpl = (y2nlib.callPackageJson ./bahnhofshalle/package.json { }) deps;
-      node_modules = y2nlib.linkNodeDeps {
-        dependencies = tpl.nodeBuildInputs;
-        inherit (tpl.key) name;
-      };
+      nodePackages = import ./bahnhofshalle/node2nix { inherit pkgs nodejs; };
+      nodeDeps = nodePackages.shell.nodeDependencies;
     in stdenv.mkDerivation {
+      pname = "bahnhofshalle";
       inherit version;
-      inherit (tpl.key) name;
 
       inherit src;
       sourceRoot = sourceName + "/bahnhofshalle";
 
-      buildInputs = [ redo-sh ];
+      buildInputs = [ nodejs ];
 
       buildPhase = ''
-        # yeah … idk … node
-        ln -s "${node_modules}" node_modules
-        export NODE_PATH=node_modules
+        export PARCEL_WORKERS=$NIX_BUILD_CORES
+        ln -s ${nodeDeps}/lib/node_modules ./node_modules
+        export PATH="${nodeDeps}/bin:$PATH"
 
-        redo main.js
+        parcel build index.html --out-dir="dist" --no-source-maps
+
+        # fail if parcel doesn't produce an output
+        if [[ "$(find dist | wc -l)" -le 1 ]]; then
+          exit 1
+        fi
       '';
 
       installPhase = ''
-        install -Dm644 -t $out index.html
-        install -Dm644 -t $out openlab-logo.png
-        install -Dm644 -t $out favicon.ico
-        install -Dm644 -t $out main.js
-        install -Dm644 -t $out style.css
+        cp -r dist $out
       '';
-
-      dontStrip = true;
     };
 
   anzeigetafel =

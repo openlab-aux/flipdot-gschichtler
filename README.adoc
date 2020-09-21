@@ -227,16 +227,14 @@ Build settings can be tweaked in `warteraum/build_config`.
 bahnhofshalle
 ~~~~~~~~~~~~~
 
-The web frontend is written in EmcaScript 6, so we compile it to
-EcmaScript 5 (or “regular” JavaScript) for wider browser support.
-This is done using `babel`. The build is automated using `redo`
-although you can probably also run the command manually (see
-`default.js.do`) and dependencies are handled by `yarn`.
+We need `parcel` and `babel`. It is probably easiest to
+either use the `bahnhofshalle` attribute of `default.nix` or `npm`
+or `yarn` to install the dependencies of `package.json` like this:
 
 ------------------------
 cd bahnhofshalle
 yarn install
-yarn run redo main.js
+yarn run build    # result in ./dist
 ------------------------
 
 Note that all requests are sent using a `same-origin` policy,
