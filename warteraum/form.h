@@ -2,24 +2,26 @@
 
 #include <stdbool.h>
 
-enum form_token_type {
-  FORM_TOKEN_EQUAL_SIGN,
-  FORM_TOKEN_AND_SIGN,
-  FORM_TOKEN_STRING
+/* Simple parser for application/x-www-form-urlencoded
+ * See: https://url.spec.whatwg.org/#urlencoded-parsing
+ * May not conform 100%: “The application/x-www-form-urlencoded
+ * format is in many ways an aberrant monstrosity”
+ */
+
+enum field_type {
+  FIELD_TYPE_STRING,
+  FIELD_TYPE_OPTIONAL_STRING
 };
 
-struct form_token {
-  enum form_token_type type;
-  struct http_string_s token;
-};
-
-struct form_token_spec {
-  enum form_token_type expected;
+struct form_field_spec {
+  struct http_string_s field;
+  enum field_type type;
   struct http_string_s *target;
 };
 
-struct form_token *form_next_token(struct http_string_s, int *);
+bool form_parse(struct http_string_s, const struct form_field_spec[], size_t);
 
-bool form_parse(struct http_string_s, const struct form_token_spec[], size_t);
+#define STATIC_FORM_PARSE(s, sp) \
+  form_parse(s, sp, sizeof(sp) / sizeof(struct form_field_spec))
 
 int urldecode(struct http_string_s, char *, size_t);

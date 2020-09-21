@@ -8,6 +8,8 @@
 
 #include "../third_party/json_output/json_output.h"
 
+#include "http_string.h"
+
 #include "queue.h"
 #include "routing.h"
 #include "form.h"
@@ -18,17 +20,8 @@
 
 #define LISTEN_PORT 9000
 
-#define STATIC_HTTP_STRING(s) \
-  { s, sizeof(s) - 1 }
-
 #define JSO_STATIC_PROP(s, str) \
   jso_prop_len(s, str, sizeof(str) - 1)
-
-#define HTTP_STRING_EQ(a, b) \
-  (a.len == b.len && strncmp(a.buf, b.buf, a.len) == 0)
-
-#define HTTP_STRING_IS(a, s) \
-  (a.len == sizeof(s) - 1 && strncmp(a.buf, s, a.len) == 0)
 
 // compare http_string against a static string,
 // but optionally allow an ;… after it.
@@ -174,13 +167,9 @@ enum warteraum_result response_queue(enum warteraum_version v, http_request_t *r
 
 // POST /api/{v1,v2}/queue/add
 enum warteraum_result response_queue_add(enum warteraum_version version, http_request_t *request, http_response_t *response) {
-  http_string_t field_name;
   http_string_t text;
-
-  const struct form_token_spec request_spec[] = {
-    { FORM_TOKEN_STRING, &field_name },
-    { FORM_TOKEN_EQUAL_SIGN, NULL },
-    { FORM_TOKEN_STRING, &text }
+  const struct form_field_spec request_spec[] = {
+    { STATIC_HTTP_STRING("text"), FIELD_TYPE_STRING, &text }
   };
 
   if(flip_queue.last != NULL && flip_queue.last->id == QUEUE_MAX_ID) {
@@ -197,9 +186,9 @@ enum warteraum_result response_queue_add(enum warteraum_version version, http_re
 
   http_string_t body = http_request_body(request);
 
-  bool parse_res = form_parse(body, request_spec, sizeof(request_spec) / sizeof(struct form_token_spec));
+  bool parse_res = STATIC_FORM_PARSE(body, request_spec);
 
-  if(!parse_res || !HTTP_STRING_IS(field_name, "text")) {
+  if(!parse_res) {
     return WARTERAUM_BAD_REQUEST;
   }
 
@@ -266,17 +255,14 @@ enum warteraum_result response_queue_del(http_string_t id_str, enum warteraum_ve
 
   http_string_t body = http_request_body(request);
   http_string_t token;
-  http_string_t field_name;
 
-  const struct form_token_spec request_spec[] = {
-    { FORM_TOKEN_STRING, &field_name },
-    { FORM_TOKEN_EQUAL_SIGN, NULL },
-    { FORM_TOKEN_STRING, &token }
+  const struct form_field_spec request_spec[] = {
+    { STATIC_HTTP_STRING("token"), FIELD_TYPE_STRING, &token }
   };
 
-  bool parse_res = form_parse(body, request_spec, sizeof(request_spec) / sizeof(struct form_token_spec));
+  bool parse_res = STATIC_FORM_PARSE(body, request_spec);
 
-  if(!parse_res || !HTTP_STRING_IS(field_name, "token")) {
+  if(!parse_res) {
     return WARTERAUM_BAD_REQUEST;
   }
 

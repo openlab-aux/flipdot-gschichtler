@@ -1,42 +1,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include "test.h"
 #include "../queue.h"
-
-#define INFO_WIDTH 50
-
-static bool test_result;
-
-void test_case(char *info, bool result) {
-  char *result_str = "okay";
-  FILE *output = stdout;
-
-  if(!result) {
-    result_str = "FAIL";
-    output = stderr;
-  }
-
-  int w = INFO_WIDTH;
-
-  while(*info != '\0') {
-    fputc(*info, output);
-    w--; info++;
-  }
-
-  fputs(":", output);
-  w--;
-
-  while(w > 0) {
-    fputc(' ', output);
-    w--;
-  }
-
-  fputs(info, output);
-  fputs(result_str, output);
-  fputc('\n', output);
-
-  test_result = test_result && result;
-}
 
 int main(void) {
   struct queue q;

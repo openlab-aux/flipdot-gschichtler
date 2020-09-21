@@ -1,1 +1,1 @@
-redo-ifchange warteraum hashtoken test/test_queue
+redo-ifchange warteraum hashtoken test/all

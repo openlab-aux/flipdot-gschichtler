@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -e
+cd "$(dirname "$0")"
+
+echo -e "\n# queue tests\n"
+./test_queue.exe
+echo -e "\n# form parsing tests\n"
+./test_form.exe

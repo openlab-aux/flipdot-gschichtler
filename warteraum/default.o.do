@@ -10,11 +10,13 @@ fi
 
 case "$2" in
   main)
-    redo-ifchange queue.h routing.h form.h v1_static.h scrypt.h tokens.h
+    redo-ifchange queue.h routing.h form.h v1_static.h
+    redo-ifchange scrypt.h tokens.h http_string.h
     redo-ifchange ../third_party/json_output/json_output.h
     redo-ifchange ../third_party/httpserver.h/httpserver.h
     ;;
   form)
+    redo-ifchange http_string.h
     redo-ifchange ../third_party/httpserver.h/httpserver.h
     ;;
   routing)

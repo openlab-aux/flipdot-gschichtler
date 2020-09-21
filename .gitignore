@@ -5,10 +5,11 @@ vgcore.*
 /warteraum/all
 /warteraum/warteraum
 /warteraum/hashtoken
-/warteraum/test/test_queue
+/warteraum/test/*.exe
 
 # redo-sh
 .redo
+*.tmp2
 # redo-c
 .dep.*
 .depend.*

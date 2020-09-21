@@ -29,16 +29,11 @@ API Documentation
 Caveats
 ~~~~~~~
 
-Current form parsing is somewhat limited. Make sure you don't
-send any extra unnecessary form fields in your request body or
-`warteraum` may refuse to cooperate with you.
-
-The `v2` API may support `application/json` request bodies in
-the future. This is not yet the case.
-
-Any endpoint may also return different status codes than the
-ones listed here in unusual cases. These would typically
-be codes like 500 or 502.
+* The `v2` API may support `application/json` request bodies in
+  the future. This is not yet the case.
+* Any endpoint may also return different status codes than the
+  ones listed here in unusual cases. These would typically
+  be codes like 500 or 502.
 
 API `v2`
 ~~~~~~~~

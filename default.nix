@@ -68,6 +68,7 @@ let
       patchPhase = ''
         runHook prePatch
 
+        patchShebangs test/run
         ${saltReplace}
         ${tokensReplace}
 
@@ -77,7 +78,7 @@ let
       buildPhase = "redo";
 
       doCheck = true;
-      checkPhase = "./test/test_queue";
+      checkPhase = "./test/run";
 
       installPhase = ''
         install -Dm755 warteraum -t $out/bin
