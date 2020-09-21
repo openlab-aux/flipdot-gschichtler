@@ -140,6 +140,7 @@ rec {
       installPhase = ''
         install -Dm644 -t $out index.html
         install -Dm644 -t $out openlab-logo.png
+        install -Dm644 -t $out favicon.ico
         install -Dm644 -t $out main.js
         install -Dm644 -t $out style.css
       '';
