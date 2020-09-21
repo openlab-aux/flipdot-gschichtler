@@ -1,0 +1,29 @@
+name: "CI"
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  nix-build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2.3.1
+    - uses: cachix/install-nix-action@v10
+    - uses: cachix/cachix-action@v6
+      with:
+        name: openlab-aux
+        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+
+    # TODO: fix default.nix so we can just nix-build default.nix
+    #       nix expression for anzeigetafel
+    #       nixos module test?
+
+    - name: build standard warteraum binary plus tests
+      run: nix-build -A warteraum
+    - name: build static warteraum binary plus tests
+      run: nix-build -A warteraum-static
+    - name: build bahnhofshalle
+      run: nix-build -A bahnhofshalle
