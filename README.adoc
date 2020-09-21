@@ -34,6 +34,9 @@ Caveats
 * Any endpoint may also return different status codes than the
   ones listed here in unusual cases. These would typically
   be codes like 500 or 502.
+* ids are not guaranteed to never be reassigned. However,
+  ids only start to get reassigned after the queue has been
+  fully emptied.
 
 API `v2`
 ~~~~~~~~
