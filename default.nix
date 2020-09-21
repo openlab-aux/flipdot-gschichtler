@@ -1,4 +1,4 @@
-{ pkgs ? (import <nixpkgs> {})
+{ pkgs ? (import ./nixpkgs-pinned.nix { })
 , scryptSalt ? null
 , apiTokens ? null
 }:
