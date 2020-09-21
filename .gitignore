@@ -16,8 +16,10 @@ vgcore.*
 .depend.*
 .target.*
 
-/bahnhofshalle/main.js
 /bahnhofshalle/node_modules
+/bahnhofshalle/.cache
+/bahnhofshalle/yarn-error.log
+/bahnhofshalle/dist/
 
 web/queue.db
 __pycache__/
