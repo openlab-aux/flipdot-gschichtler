@@ -93,7 +93,7 @@ in
 rec {
   warteraum-static = (pkgsStatic.callPackage warteraumDrv {
     # todo clang?
-    redo = pkgsStatic.redo-sh;
+    redo = pkgsStatic.redo-c;
     inherit scryptSalt apiTokens;
   }).overrideAttrs (old: {
     # musl, static linking
@@ -106,7 +106,7 @@ rec {
 
   warteraum = callPackage warteraumDrv {
     stdenv = clangStdenv;
-    redo = redo-sh;
+    redo = redo-c;
     inherit scryptSalt apiTokens;
   };
 
