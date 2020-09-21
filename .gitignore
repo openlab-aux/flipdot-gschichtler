@@ -3,6 +3,7 @@
 *.o
 vgcore.*
 /warteraum/all
+/warteraum/test/all
 /warteraum/warteraum
 /warteraum/hashtoken
 /warteraum/test/*.exe

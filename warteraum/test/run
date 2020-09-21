@@ -3,6 +3,8 @@
 set -e
 cd "$(dirname "$0")"
 
+redo all
+
 echo -e "\n# queue tests\n"
 ./test_queue.exe
 echo -e "\n# form parsing tests\n"
