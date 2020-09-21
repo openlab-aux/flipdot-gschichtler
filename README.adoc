@@ -55,19 +55,18 @@ following JSON format. `length` corresponds with
 the length of the queue array. `queue` is ordered
 by time of each item's addition, i. e. the first
 item is next up to be displayed. The supplied `id`
-may be used to delete the entries via the `del`
-endpoint.
+may be used to delete the entries.
 
 -------------------------
 {
   "queue": [
     {
-      "id": 1,
-      "text": "world"
-    },
-    {
       "id": 0,
       "text": "hello"
+    },
+    {
+      "id": 1,
+      "text": "world"
     }
   ],
   "length": 2
