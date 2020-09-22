@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "routing.h"
+
 int split_segments(struct http_string_s path, struct http_string_s **segs) {
   if(segs == NULL || *segs != NULL) {
     return -1;

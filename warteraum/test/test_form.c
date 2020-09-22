@@ -1,5 +1,8 @@
+#include <stdbool.h>
+
 #define TEST_EXIT_ON_FAIL true
 #include "test.h"
+
 #include "../http_string.h"
 #include "../form.h"
 
