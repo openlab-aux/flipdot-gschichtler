@@ -53,15 +53,3 @@ int split_segments(struct http_string_s path, struct http_string_s **segs) {
 
   return seg_len;
 }
-
-bool segment_match(int index, char *string, struct http_string_s *segs, int seg_count) {
-  if(index >= seg_count || segs == NULL || string == NULL) {
-    return false;
-  }
-
-  return (strncmp(string, segs[index].buf, segs[index].len) == 0);
-}
-
-bool segment_match_last(int index, char *string, struct http_string_s *segs, int seg_count) {
-  return (index + 1 == seg_count && segment_match(index, string, segs, seg_count));
-}

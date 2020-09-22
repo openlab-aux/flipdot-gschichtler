@@ -337,28 +337,28 @@ void handle_request(http_request_t *request) {
   if(count < 0) {
     status = WARTERAUM_INTERNAL_ERROR;
   } else {
-    if(segment_match(0, "api", segs, count)) {
-      if(segment_match(1, "v1", segs, count)) {
+    if(SEGMENT_MATCH(0, "api", segs, count)) {
+      if(SEGMENT_MATCH(1, "v1", segs, count)) {
         api_version = WARTERAUM_API_V1;
 
-        if(segment_match(2, "queue", segs, count)) {
+        if(SEGMENT_MATCH(2, "queue", segs, count)) {
           if(count == 3) {
             status = response_queue(api_version, request, response);
-          } else if(segment_match_last(3, "add", segs, count)) {
+          } else if(SEGMENT_MATCH_LAST(3, "add", segs, count)) {
             // this endpoint returns html in /api/v1
             v1_html_response = true;
             status = response_queue_add(api_version, request, response);
-          } else if(segment_match(3, "del", segs, count) && count == 5) {
+          } else if(SEGMENT_MATCH(3, "del", segs, count) && count == 5) {
             status = response_queue_del(segs[4], api_version, request, response);
           }
         }
-      } else if(segment_match(1, "v2", segs, count)) {
+      } else if(SEGMENT_MATCH(1, "v2", segs, count)) {
         api_version = WARTERAUM_API_V2;
 
-        if(segment_match(2, "queue", segs, count)) {
+        if(SEGMENT_MATCH(2, "queue", segs, count)) {
           if(count == 3) {
             status = response_queue(api_version, request, response);
-          } else if(segment_match_last(3, "add", segs, count)) {
+          } else if(SEGMENT_MATCH_LAST(3, "add", segs, count)) {
             status = response_queue_add(api_version, request, response);
           } else if(count == 4) {
             // /api/v2/queue/<id>
