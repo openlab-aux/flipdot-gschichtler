@@ -1,1 +1,1 @@
-redo-ifchange test_queue.exe test_form.exe
+redo-ifchange test_queue.exe test_form.exe test_routing.exe

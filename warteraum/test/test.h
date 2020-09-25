@@ -10,7 +10,7 @@
 #define TEST_INFO_WIDTH 50
 #endif
 
-static bool test_result;
+static bool test_result = true;
 
 void test_case(char *info, bool result) {
   char *result_str = "okay";

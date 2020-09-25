@@ -5,7 +5,10 @@ cd "$(dirname "$0")"
 
 redo all
 
-echo -e "\n# queue tests\n"
-./test_queue.exe
-echo -e "\n# form parsing tests\n"
-./test_form.exe
+TESTS="queue form routing"
+
+for t in $TESTS; do
+
+  echo -e "\n# $t tests\n"
+  "./test_$t.exe"
+done
