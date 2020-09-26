@@ -9,7 +9,6 @@ CFLAGS="$CFLAGS -std=gnu99"
 # disable some warnings not caused by us
 CFLAGS="$CFLAGS -Wno-unused-command-line-argument"   # nix musl-clang
 CFLAGS="$CFLAGS -Wno-gnu-empty-initializer"          # httpserver.h
-CFLAGS="$CFLAGS -Wno-unused-function"                # json_output
 
 # fix build issue with glibc 2.31 on NixOS
 # https://github.com/jeremycw/httpserver.h/pull/43

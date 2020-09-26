@@ -196,7 +196,6 @@ Help is welcome! Some things that remain to be done:
 * Important: Documentation. Annoying sterni into doing it is also helping.
 * Make `warteraum` accept `application/json` request bodies for the `v2`
   API using http://www.catb.org/~esr/microjson/[microjson] (?).
-* Rewrite `json_output.c` to avoid licensing issue
 * Polish the web frontend, test across browsers
 * Refresh queue regularly in the web frontend
 * Write more tests

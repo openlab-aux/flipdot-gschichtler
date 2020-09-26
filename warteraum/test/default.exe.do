@@ -15,6 +15,9 @@ case "$2" in
     OBJS="../routing.o"
     redo-ifchange ../http_string.h
     ;;
+  test_emitjson)
+    OBJS="../emitjson.o"
+    ;;
 esac
 
 redo-ifchange $OBJS

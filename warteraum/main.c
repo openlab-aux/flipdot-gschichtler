@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../third_party/json_output/json_output.h"
+#include "emitjson.h"
 
 #include "http_string.h"
 
@@ -20,9 +20,6 @@
 
 #define LISTEN_PORT 9000
 
-#define JSO_STATIC_PROP(s, str) \
-  jso_prop_len(s, str, sizeof(str) - 1)
-
 // compare http_string against a static string,
 // but optionally allow an ;… after it.
 // i.e. application/json;charset=utf8 matches with
@@ -31,6 +28,9 @@
   ((size_t) a.len >= sizeof(s) - 1 &&                        \
     strncmp(a.buf, s, sizeof(s) - 1) == 0 &&                 \
     ((size_t) a.len < sizeof(s) || a.buf[sizeof(s) - 1] == ';'))
+
+#define INTERNAL_ERROR_STATIC \
+  "{\"error\":\"internal error while building error response\"}"
 
 // Global state
 
@@ -106,21 +106,37 @@ void response_error(enum warteraum_result e, bool legacy_response, http_request_
     http_response_body(response, QUEUE_ADD_V1_FAILURE, sizeof(QUEUE_ADD_V1_FAILURE) - 1);
     http_respond(request, response);
   } else {
-    jso_stream s;
+    size_t buf_size = 0;
+    char *buf = NULL;
+    FILE *out = open_memstream(&buf, &buf_size);
+    struct ej_context ctx;
+    bool static_buf = false;
 
-    jso_init_growable(&s);
+    ej_init(&ctx, out);
 
-    jso_object(&s);
-    JSO_STATIC_PROP(&s, "error");
-    jso_string_len(&s, errors[e].buf, (size_t) errors[e].len);
-    jso_end_object(&s);
+    if(out == NULL) {
+      buf = INTERNAL_ERROR_STATIC;
+      buf_size = sizeof(INTERNAL_ERROR_STATIC) - 1;
+
+      static_buf = true;
+      e = WARTERAUM_INTERNAL_ERROR;
+    } else {
+      ej_object(&ctx);
+      EJ_STATIC_BIND(&ctx, "error");
+      ej_string(&ctx, errors[e].buf, (size_t) errors[e].len);
+      ej_object_end(&ctx);
+
+      fclose(out);
+    }
 
     http_response_status(response, codes[e]);
     http_response_header(response, "Content-Type", "application/json");
-    http_response_body(response, s.data, (int) s.pos);
+    http_response_body(response, buf, static_buf ? buf_size : (int) ctx.written);
     http_respond(request, response);
 
-    jso_close(&s);
+    if(!static_buf) {
+      free(buf);
+    }
   }
 }
 
@@ -129,38 +145,49 @@ enum warteraum_result response_queue(enum warteraum_version v, http_request_t *r
   (void) v; // surpress warning for now
 
   unsigned int queue_length = 0;
-  jso_stream s;
-  jso_init_growable(&s);
 
-  jso_object(&s);
-  JSO_STATIC_PROP(&s, "queue");
-  jso_array(&s);
+  struct ej_context ctx;
+  size_t buf_size = 0;
+  char *buf = NULL;
+  FILE *out = open_memstream(&buf, &buf_size);
+
+  if(out == NULL) {
+    return WARTERAUM_INTERNAL_ERROR;
+  }
+
+  ej_init(&ctx, out);
+
+  ej_object(&ctx);
+  EJ_STATIC_BIND(&ctx, "queue");
+  ej_array(&ctx);
 
   queue_foreach(flip_queue, elem) {
     queue_length++;
-    jso_object(&s);
+    ej_object(&ctx);
 
-    JSO_STATIC_PROP(&s, "id");
-    jso_uint(&s, elem->id);
+    EJ_STATIC_BIND(&ctx, "id");
+    ej_uint(&ctx, elem->id);
 
-    JSO_STATIC_PROP(&s, "text");
-    jso_string_len(&s, elem->string, elem->string_size);
+    EJ_STATIC_BIND(&ctx, "text");
+    ej_string(&ctx, elem->string, elem->string_size);
 
-    jso_end_object(&s);
+    ej_object_end(&ctx);
   }
 
-  jso_end_array(&s);
+  ej_array_end(&ctx);
 
-  JSO_STATIC_PROP(&s, "length");
-  jso_uint(&s, queue_length);
-  jso_end_object(&s);
+  EJ_STATIC_BIND(&ctx, "length");
+  ej_uint(&ctx, queue_length);
+  ej_object_end(&ctx);
+
+  fclose(out);
 
   http_response_status(response, 200);
   http_response_header(response, "Content-Type", "application/json");
-  http_response_body(response, s.data, (int) s.pos);
+  http_response_body(response, buf, (int) ctx.written);
   http_respond(request, response);
 
-  jso_close(&s);
+  free(buf);
 
   return WARTERAUM_OK;
 }
@@ -219,22 +246,32 @@ enum warteraum_result response_queue_add(enum warteraum_version version, http_re
     http_response_body(response, QUEUE_ADD_V1_SUCCESS, sizeof(QUEUE_ADD_V1_SUCCESS) - 1);
     http_respond(request, response);
   } else {
-    jso_stream s;
-    jso_init_growable(&s);
+    struct ej_context ctx;
+    char *buf = NULL;
+    size_t buf_size = 0;
+    FILE *out = open_memstream(&buf, &buf_size);
 
-    jso_object(&s);
-    JSO_STATIC_PROP(&s, "id");
-    jso_uint(&s, flip_queue.last->id);
-    JSO_STATIC_PROP(&s, "text");
-    jso_string_len(&s, flip_queue.last->string, flip_queue.last->string_size);
-    jso_end_object(&s);
+    if(out == NULL) {
+      return WARTERAUM_INTERNAL_ERROR;
+    }
+
+    ej_init(&ctx, out);
+
+    ej_object(&ctx);
+    EJ_STATIC_BIND(&ctx, "id");
+    ej_uint(&ctx, flip_queue.last->id);
+    EJ_STATIC_BIND(&ctx, "text");
+    ej_string(&ctx, flip_queue.last->string, flip_queue.last->string_size);
+    ej_object_end(&ctx);
+
+    fclose(out);
 
     http_response_status(response, 200);
     http_response_header(response, "Content-Type", "application/json");
-    http_response_body(response, s.data, (int) s.pos);
+    http_response_body(response, buf, (int) ctx.written);
     http_respond(request, response);
 
-    jso_close(&s);
+    free(buf);
   }
 
   return WARTERAUM_OK;

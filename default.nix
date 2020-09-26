@@ -35,7 +35,7 @@ let
       builtins.filter nonempty (builtins.genList
         stringSplitter ((builtins.stringLength s / n) + 1));
 
-  warteraumDrv = { stdenv, redo, scrypt, scryptSalt ? null, apiTokens ? null }:
+  warteraumDrv = { stdenv, redo, scrypt, jq, scryptSalt ? null, apiTokens ? null }:
     let
       saltBytes = stringSegments 2 scryptSalt;
       saltArray =
@@ -79,6 +79,7 @@ let
 
       doCheck = true;
       checkPhase = "./test/run";
+      checkInputs = [ jq ];
 
       installPhase = ''
         install -Dm755 warteraum -t $out/bin

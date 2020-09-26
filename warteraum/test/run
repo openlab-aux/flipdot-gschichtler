@@ -5,10 +5,23 @@ cd "$(dirname "$0")"
 
 redo all
 
-TESTS="queue form routing"
+TESTS="queue form routing emitjson"
 
 for t in $TESTS; do
 
   echo -e "\n# $t tests\n"
   "./test_$t.exe"
 done
+
+echo -e "\n# test emitjson validity\n"
+
+if command -v jq > /dev/null; then
+  if ./test_emitjson.exe -o | jq; then
+    echo -e "\njson validity\tok"
+  else
+    echo -e "\njson validity\tFAIL"
+    exit 1
+  fi
+else
+  echo -e "json validity\tskipped (missing jq)"
+fi
