@@ -145,16 +145,18 @@ void ej_bool(struct ej_context *ctx, bool b) {
                                                                \
     if(sign && u < 0) {                                        \
       add_sign = true;                                         \
-      u = -u;                                                  \
     }                                                          \
                                                                \
     do {                                                       \
       start--;                                                 \
       len++;                                                   \
       d = u % 10;                                              \
+      if(add_sign) {                                           \
+        d = -d;                                                \
+      }                                                        \
       u = u / 10;                                              \
       *start = d + 48;                                         \
-    } while(u > 0 && len <= BUF_SIZE);                         \
+    } while(u != 0 && len <= BUF_SIZE);                        \
                                                                \
     if(add_sign) {                                             \
       ej_putc(ctx, '-');                                       \
