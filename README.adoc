@@ -313,24 +313,24 @@ Changelog
 ---------
 
 2.0.0 (WIP)
-^^^^^^^^^^^
+~~~~~~~~~~~
 
 * Replace `admin` and `web` frontends with pure EcmaScript
   frontend `bahnhofshalle`
 * Replace `web` API implementation with `warteraum`
 * Rename `flipper` to `anzeigetafel`
 * API:
-  * Move endpoints from `/` to `/api/v1/`
-  * `/api/v1/queue/add` HTML response changes, since no longer
-    used by the frontend (except when no JavaScript is available)
-  * Add cleaned up version of the API as `/api/v2`. This one is used
-    by `bahnhofshalle` and `anzeigetafel` and should be utilized by
-    clients going forward.
+** Move endpoints from `/` to `/api/v1/`
+** `/api/v1/queue/add` HTML response changes, since no longer
+   used by the frontend (except when no JavaScript is available)
+** Add cleaned up version of the API as `/api/v2`. This one is used
+   by `bahnhofshalle` and `anzeigetafel` and should be utilized by
+   clients going forward.
 * Deployment:
-  * Implement API/Frontend deployment as a NixOS service
+** Implement API/Frontend deployment as a NixOS service
 
 1.0.0
-^^^^^
+~~~~~
 
 https://github.com/openlab-aux/flipdot-gschichtler/tree/1.0.0[Browse code]
 
