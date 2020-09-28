@@ -167,5 +167,19 @@ void ej_bool(struct ej_context *ctx, bool b) {
   }
 
 EJ_INT_FUN(ej_uint, unsigned int, false)
-
 EJ_INT_FUN(ej_int, int, true)
+
+EJ_INT_FUN(ej_long_long, long long int, true)
+EJ_INT_FUN(ej_long, long int, true)
+EJ_INT_FUN(ej_ulong, unsigned long int, false)
+EJ_INT_FUN(ej_ulong_long, unsigned long long int, false)
+
+EJ_INT_FUN(ej_int8, int8_t, true)
+EJ_INT_FUN(ej_int16, int16_t, true)
+EJ_INT_FUN(ej_int32, int32_t, true)
+EJ_INT_FUN(ej_int64, int64_t, true)
+
+EJ_INT_FUN(ej_uint8, uint8_t, false)
+EJ_INT_FUN(ej_uint16, uint16_t, false)
+EJ_INT_FUN(ej_uint32, uint32_t, false)
+EJ_INT_FUN(ej_uint64, uint64_t, false)
