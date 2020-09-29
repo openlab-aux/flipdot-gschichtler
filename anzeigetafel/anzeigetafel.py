@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import sys
 import requests
@@ -11,6 +12,11 @@ else:
     exit(1)
 
 BASEURL = 'https://flipdot.openlab-augsburg.de/api/v2'
+
+FLIPDOT_HOST = 'localhost'
+FLIPDOT_PORT = 2323
+
+FONT = '/usr/share/fonts/truetype/unifont/unifont.ttf'
 
 def get_queue():
     r = requests.get(BASEURL + '/queue')
@@ -39,7 +45,7 @@ while True:
 
     print("Drawing string \"{}\" with id {}".format(text.encode("utf-8"), id))
 
-    scroll_text("localhost", 2323, "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", text)
+    scroll_text(FLIPDOT_HOST, FLIPDOT_PORT, FONT, text)
 
     (sucess, status) = delete_queue_entry(id)
 
