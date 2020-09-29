@@ -149,18 +149,32 @@ rec {
       dontStrip = true;
     };
 
-  pythonShell =
+  anzeigetafel =
     let
-      pythonEnv = python3.withPackages (p: with p; [
-        flask
-        pillow
-        requests
-        sqlite
-      ]);
-    in mkShell {
-      name = "python-env";
+      pythonEnv = python3.withPackages (p: with p; [ pillow requests ]);
+      libPath = "$out/lib/${pythonEnv.libPrefix}/site-lib";
+    in stdenv.mkDerivation {
+      pname = "anzeigetafel";
+      inherit version;
 
-      buildInputs = [ pythonEnv sqlite ];
+      inherit src;
+      sourceRoot = sourceName + "/anzeigetafel";
+
+      buildInputs = [ pythonEnv makeWrapper ];
+
+      patchPhase = ''
+        sed -i 's|FONT =.*$|FONT = "${unifont}/share/fonts/truetype/unifont.ttf"|' anzeigetafel.py
+      '';
+
+      installPhase = ''
+        install -Dm755 anzeigetafel.py $out/bin/anzeigetafel
+        mkdir -p ${libPath}/flipdots
+        cp -r ../third_party/flipdots/scripts ${libPath}/flipdots/scripts
+      '';
+
+      postFixup = ''
+        wrapProgram $out/bin/anzeigetafel \
+          --prefix PYTHONPATH : "${libPath}"
+      '';
     };
-
 }

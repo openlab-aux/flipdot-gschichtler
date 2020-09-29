@@ -266,6 +266,7 @@ ready to be installed:
   using gcc and musl (used for the systemd service so we
   can restrict file system access)
 * `bahnhofshalle`
+* `anzeigetafel`
 
 The warteraum attributes can be overriden to set the following
 values:
