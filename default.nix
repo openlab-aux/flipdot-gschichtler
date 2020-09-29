@@ -122,7 +122,7 @@ rec {
         inherit (tpl.key) name;
       };
     in stdenv.mkDerivation {
-      inherit (tpl) version;
+      inherit version;
       inherit (tpl.key) name;
 
       inherit src;
