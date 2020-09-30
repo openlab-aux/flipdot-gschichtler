@@ -76,7 +76,9 @@ enum warteraum_result {
   WARTERAUM_BAD_REQUEST = 1,
   WARTERAUM_UNAUTHORIZED = 2,
   WARTERAUM_NOT_FOUND = 3,
-  WARTERAUM_INTERNAL_ERROR = 4
+  WARTERAUM_INTERNAL_ERROR = 4,
+  WARTERAUM_FULL_ERROR = 5,
+  WARTERAUM_ENTRY_NOT_FOUND = 6
 };
 
 enum warteraum_version {
@@ -91,11 +93,13 @@ void response_error(enum warteraum_result e, bool legacy_response, http_request_
     STATIC_HTTP_STRING("internal server error"),
     STATIC_HTTP_STRING("bad request"),
     STATIC_HTTP_STRING("unauthorized"),
-    STATIC_HTTP_STRING("not found"),
+    STATIC_HTTP_STRING("endpoint not found"),
     STATIC_HTTP_STRING("internal server error"),
+    STATIC_HTTP_STRING("queue is full (max id reached)"),
+    STATIC_HTTP_STRING("queue entry not found"),
   };
 
-  const int codes[] = { 500, 400, 401, 404, 500 };
+  const int codes[] = { 500, 400, 401, 404, 500, 503, 404 };
 
   if(legacy_response) {
     // /api/v1/queue/add returns a HTML response
@@ -200,7 +204,7 @@ enum warteraum_result response_queue_add(enum warteraum_version version, http_re
   };
 
   if(flip_queue.last != NULL && flip_queue.last->id == QUEUE_MAX_ID) {
-    return WARTERAUM_INTERNAL_ERROR;
+    return WARTERAUM_FULL_ERROR;
   }
 
   http_string_t content_type = http_request_header(request, "Content-Type");
@@ -335,12 +339,12 @@ enum warteraum_result response_queue_del(http_string_t id_str, enum warteraum_ve
   }
 
   if(flip_queue.first == NULL || flip_queue.last == NULL) {
-    return WARTERAUM_NOT_FOUND;
+    return WARTERAUM_ENTRY_NOT_FOUND;
   }
 
   // don't iterate through the queue if the id is out of range
   if(flip_queue.first->id > id || flip_queue.last->id < id) {
-    return WARTERAUM_NOT_FOUND;
+    return WARTERAUM_ENTRY_NOT_FOUND;
   }
 
   bool found = queue_remove(&flip_queue, id);
@@ -350,7 +354,7 @@ enum warteraum_result response_queue_del(http_string_t id_str, enum warteraum_ve
     http_respond(request, response);
     return WARTERAUM_OK;
   } else {
-    return WARTERAUM_NOT_FOUND;
+    return WARTERAUM_ENTRY_NOT_FOUND;
   }
 }
 

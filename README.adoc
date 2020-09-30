@@ -114,6 +114,7 @@ of its `text` and `id`:
 | HTTP Status  | Meaning
 | 200          | Success, text added
 | 400          | Illegal method or malformed request
+| 503          | The queue is full, i. e. the max id has been reached
 |=============================================
 
 DELETE `/api/v2/queue/<id>`
