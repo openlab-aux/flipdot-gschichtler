@@ -16,14 +16,5 @@ jobs:
       with:
         name: openlab-aux
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-
-    # TODO: fix default.nix so we can just nix-build default.nix
-    #       nix expression for anzeigetafel
-    #       nixos module test?
-
-    - name: build standard warteraum binary plus tests
-      run: nix-build -A warteraum
-    - name: build static warteraum binary plus tests
-      run: nix-build -A warteraum-static
-    - name: build bahnhofshalle
-      run: nix-build -A bahnhofshalle
+    - name: nix-build
+      run: nix-build
