@@ -1,6 +1,7 @@
 #define HTTPSERVER_IMPL
 #include "../third_party/httpserver.h/httpserver.h"
 
+#include <ctype.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -44,6 +45,33 @@ void cleanup(int signum) {
     queue_free(flip_queue);
     free(server);
     exit(EXIT_SUCCESS);
+  }
+}
+
+// adjust pointer and length so it points to a string that
+// has no leading nor trailing whitespace
+void trim_whitespace(char **str, int *len) {
+  if(*len > 0) {
+    int new_len = *len;
+    int new_start = 0;
+
+    int pos = 0;
+    while(isspace(*(*str + pos)) && pos < *len) {
+      new_start++;
+      new_len--;
+      pos++;
+    }
+
+    if(new_len > 0) {
+      pos = *len - 1;
+      while(isspace(*(*str + pos)) && pos > new_start) {
+        new_len--;
+        pos--;
+      }
+    }
+
+    *len = new_len;
+    *str = *str + new_start;
   }
 }
 
@@ -239,6 +267,8 @@ enum warteraum_result response_queue_add(enum warteraum_version version, http_re
   }
 
   int decoded_len = urldecode(text, decoded, sizeof(char) * text.len);
+
+  trim_whitespace(&decoded, &decoded_len);
 
   if(decoded_len <= 0) {
     free(decoded_mem);
