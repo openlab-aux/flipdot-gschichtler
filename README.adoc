@@ -114,6 +114,7 @@ of its `text` and `id`:
 | HTTP Status  | Meaning
 | 200          | Success, text added
 | 400          | Illegal method or malformed request
+| 415          | Request body too big or text field longer allowed (usually 512 bytes)
 | 503          | The queue is full, i. e. the max id has been reached
 |=============================================
 
@@ -141,6 +142,7 @@ authenticate itself:
 | 400          | Illegal method or malformed request
 | 401          | Unauthorized API token
 | 404          | No queue entry with given `id`
+| 415          | Request body too big
 |=============================================
 
 API `v1`
@@ -175,6 +177,7 @@ I sincerly hope that nobody scraped the resulting page.
 | HTTP Status  | Meaning
 | 200          | Success, text added
 | 400          | Illegal method or malformed request
+| 415          | Request body too big or text field longer allowed (usually 512 bytes)
 |=============================================
 
 DELETE `/api/v1/queue/del/<id>`
