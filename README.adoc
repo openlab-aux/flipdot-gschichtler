@@ -1,7 +1,7 @@
 flipdot-gschichtler
 ===================
 sterni
-September 2020
+November 2020
 
 `flipdot-gschichtler` allows to display text on the OpenLab's
 flipdot panel in an user- and machine-friendly way without
@@ -314,13 +314,15 @@ in {
 Changelog
 ---------
 
-2.0.0 (WIP)
-~~~~~~~~~~~
+2.0.0
+~~~~~
+
+https://github.com/openlab-aux/flipdot-gschichtler/tree/2.0.0[Browse code]
 
 * Replace `admin` and `web` frontends with pure EcmaScript
   frontend `bahnhofshalle`
 * Replace `web` API implementation with `warteraum`
-* Rename `flipper` to `anzeigetafel`
+* Rename `flipper` to `anzeigetafel`, port to Python 3
 * API:
 ** Move endpoints from `/` to `/api/v1/`
 ** `/api/v1/queue/add` HTML response changes, since no longer
