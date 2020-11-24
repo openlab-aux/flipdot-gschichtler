@@ -18,7 +18,9 @@
 #include "v1_static.h" /* static strings for v1 api */
 #include "tokens.h"    /* valid api tokens */
 
-#define LISTEN_PORT 9000
+#define LISTEN_PORT    9000   /* port to listen on          */
+#define MAX_BODY_LEN   8192   /* max body size we'll parse  */
+#define MAX_TEXT_LEN   512    /* max length of a queue text */
 
 // compare http_string against a static string,
 // but optionally allow an ;… after it.
@@ -78,7 +80,8 @@ enum warteraum_result {
   WARTERAUM_NOT_FOUND = 3,
   WARTERAUM_INTERNAL_ERROR = 4,
   WARTERAUM_FULL_ERROR = 5,
-  WARTERAUM_ENTRY_NOT_FOUND = 6
+  WARTERAUM_ENTRY_NOT_FOUND = 6,
+  WARTERAUM_TOO_LONG = 7
 };
 
 enum warteraum_version {
@@ -97,9 +100,10 @@ void response_error(enum warteraum_result e, bool legacy_response, http_request_
     STATIC_HTTP_STRING("internal server error"),
     STATIC_HTTP_STRING("queue is full (max id reached)"),
     STATIC_HTTP_STRING("queue entry not found"),
+    STATIC_HTTP_STRING("body or other input too long"),
   };
 
-  const int codes[] = { 500, 400, 401, 404, 500, 503, 404 };
+  const int codes[] = { 500, 400, 401, 404, 500, 503, 404, 413 };
 
   if(legacy_response) {
     // /api/v1/queue/add returns a HTML response
@@ -217,6 +221,10 @@ enum warteraum_result response_queue_add(enum warteraum_version version, http_re
 
   http_string_t body = http_request_body(request);
 
+  if(body.len > MAX_BODY_LEN) {
+    return WARTERAUM_TOO_LONG;
+  }
+
   bool parse_res = STATIC_FORM_PARSE(body, request_spec);
 
   if(!parse_res) {
@@ -224,6 +232,7 @@ enum warteraum_result response_queue_add(enum warteraum_version version, http_re
   }
 
   char *decoded = malloc(sizeof(char) * text.len);
+  char *decoded_mem = decoded; // so we can advance the decoded pointer
 
   if(decoded == NULL) {
     return WARTERAUM_INTERNAL_ERROR;
@@ -232,13 +241,18 @@ enum warteraum_result response_queue_add(enum warteraum_version version, http_re
   int decoded_len = urldecode(text, decoded, sizeof(char) * text.len);
 
   if(decoded_len <= 0) {
-    free(decoded);
+    free(decoded_mem);
     return WARTERAUM_BAD_REQUEST;
+  }
+
+  if(decoded_len > MAX_TEXT_LEN) {
+    free(decoded_mem);
+    return WARTERAUM_TOO_LONG;
   }
 
   queue_append(&flip_queue, decoded, (size_t) decoded_len);
 
-  free(decoded);
+  free(decoded_mem);
 
   if(flip_queue.last == NULL) {
     return WARTERAUM_INTERNAL_ERROR;
@@ -296,6 +310,10 @@ enum warteraum_result response_queue_del(http_string_t id_str, enum warteraum_ve
 
   http_string_t body = http_request_body(request);
   http_string_t token;
+
+  if(body.len > MAX_BODY_LEN) {
+    return WARTERAUM_TOO_LONG;
+  }
 
   const struct form_field_spec request_spec[] = {
     { STATIC_HTTP_STRING("token"), FIELD_TYPE_STRING, &token }
