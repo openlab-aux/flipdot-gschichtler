@@ -7,6 +7,7 @@ vgcore.*
 /warteraum/warteraum
 /warteraum/hashtoken
 /warteraum/test/*.exe
+/warteraum/test/valgrind-log.txt
 
 # redo-sh
 .redo

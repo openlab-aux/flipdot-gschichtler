@@ -1,4 +1,5 @@
-{ stdenv, lib, redo, scrypt, jq
+{ stdenv, lib, redo, scrypt
+, jq, requests, pytest, pytest-randomly, flipdot-gschichtler, valgrind
 , scryptSalt ? null, apiTokens ? null
 , rootSrc, sourceName
 }:
@@ -62,7 +63,9 @@ stdenv.mkDerivation rec {
 
   doCheck = true;
   checkPhase = "./test/run";
-  checkInputs = [ jq ];
+  checkInputs = [
+    jq valgrind pytest pytest-randomly requests flipdot-gschichtler
+  ];
 
   installPhase = ''
     install -Dm755 warteraum -t $out/bin
