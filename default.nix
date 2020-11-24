@@ -6,7 +6,7 @@
 with pkgs;
 
 let
-  version = "unstable";
+  version = "2.0.0";
   gi = nix-gitignore;
   root = ./.;
   sourceName = "flipdot-gschichtler-source";
