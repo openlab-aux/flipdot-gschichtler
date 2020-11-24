@@ -25,3 +25,44 @@ if command -v jq > /dev/null; then
 else
   echo -e "json validity\tskipped (missing jq)"
 fi
+
+echo -e "\n# warteraum integration tests\n"
+
+if command -v pytest > /dev/null; then
+  redo ../warteraum
+
+  rm -f valgrind-log.txt
+
+  valgrind \
+    --log-file=./valgrind-log.txt \
+    --leak-check=full \
+    --track-origins=yes \
+    --show-leak-kinds=all \
+    --show-error-list=yes \
+    ../warteraum &
+  pid=$!
+
+  sleep 3
+
+  pytest ./test_integration.py
+
+  kill $pid
+
+  sleep 1
+
+  grep "All heap blocks were freed" valgrind-log.txt
+  all_freed=$?
+
+  grep "ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)" valgrind-log.txt
+  no_errors=$?
+
+  if ! (( $all_freed && $no_errors )); then
+    echo -e "\nvalgrind test\tokay"
+  else
+    echo -e "\nvalgrind test\tfail\n"
+    cat valgrind-log.txt
+    exit 1
+  fi
+else
+  echo "skipped (missing pytest)"
+fi

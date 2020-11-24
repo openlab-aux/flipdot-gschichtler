@@ -24,6 +24,7 @@ rec {
     # todo clang?
     redo = pkgs.pkgsStatic.redo-c;
     inherit scryptSalt apiTokens rootSrc sourceName;
+    inherit (python3.pkgs) pytest pytest-randomly requests flipdot-gschichtler;
   }).overrideAttrs (old: {
     # musl, static linking
     postPatch = ''
@@ -37,6 +38,7 @@ rec {
     stdenv = pkgs.clangStdenv;
     redo = pkgs.redo-c;
     inherit scryptSalt apiTokens rootSrc sourceName;
+    inherit (python3.pkgs) pytest pytest-randomly requests flipdot-gschichtler;
   };
 
   bahnhofshalle =
