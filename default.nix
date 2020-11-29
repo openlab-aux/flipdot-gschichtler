@@ -1,93 +1,29 @@
-{ pkgs ? (import ./nixpkgs-pinned.nix { })
+{ pkgs ? (import ./nix/nixpkgs-pinned.nix { })
 , scryptSalt ? null
 , apiTokens ? null
 }:
 
-with pkgs;
-
 let
-  version = "2.0.0";
-  gi = nix-gitignore;
+  gi = pkgs.nix-gitignore;
+  lib = pkgs.lib;
+
+  version = import ./nix/version.nix;
   root = ./.;
   sourceName = "flipdot-gschichtler-source";
 
-  src = builtins.path {
+  rootSrc = builtins.path {
     path = root;
     name = sourceName;
     filter = gi.gitignoreFilter (builtins.readFile ./.gitignore) root;
   };
 
-  stringSegments = n: s:
-    let
-      stringSplitter = i:
-        builtins.substring (i * 2) n s;
-      nonempty = s: builtins.stringLength s != 0;
-    in
-      builtins.filter nonempty (builtins.genList
-        stringSplitter ((builtins.stringLength s / n) + 1));
-
-  warteraumDrv = { stdenv, redo, scrypt, jq, scryptSalt ? null, apiTokens ? null }:
-    let
-      saltBytes = stringSegments 2 scryptSalt;
-      saltArray =
-        let
-          commas = builtins.foldl' (a: b: a + ", 0x" + b) "" saltBytes;
-        in builtins.substring 1 (builtins.stringLength commas) commas;
-      saltReplace = lib.optionalString (scryptSalt != null) ''
-        sed -i '/^  0x/d' scrypt.h
-        sed -i '/const uint8_t salt/a\${saltArray}' scrypt.h
-      '';
-      tokensReplace = lib.optionalString (apiTokens != null) ''
-        redo hashtoken
-        sed -i '/^  {/d' tokens.h
-        sed -i '/^};/d' tokens.h
-        ${lib.concatMapStringsSep "\n"
-            (x: "./hashtoken ${x} >> tokens.h; echo -n ', ' >> tokens.h") apiTokens}
-        echo "};" >> tokens.h
-      '';
-    in stdenv.mkDerivation rec {
-      pname = "warteraum";
-      sourceRoot = sourceName + "/warteraum";
-
-      inherit src version;
-
-      # make whole source tree writeable for redo
-      postUnpack = ''
-        chmod -R u+w "$sourceRoot/.."
-      '';
-
-      patchPhase = ''
-        runHook prePatch
-
-        patchShebangs test/run
-        ${saltReplace}
-        ${tokensReplace}
-
-        runHook postPatch
-      '';
-
-      buildPhase = "redo";
-
-      doCheck = true;
-      checkPhase = "./test/run";
-      checkInputs = [ jq ];
-
-      installPhase = ''
-        install -Dm755 warteraum -t $out/bin
-        install -Dm755 hashtoken -t $out/bin
-      '';
-
-      nativeBuildInputs = [ redo ];
-
-      buildInputs = [ scrypt ];
-    };
 in
 
 rec {
-  warteraum-static = (pkgsStatic.callPackage warteraumDrv {
+  warteraum-static = (pkgs.pkgsStatic.callPackage ./nix/warteraum.nix {
     # todo clang?
-    redo = pkgsStatic.redo-c;
-    inherit scryptSalt apiTokens;
+    redo = pkgs.pkgsStatic.redo-c;
+    inherit scryptSalt apiTokens rootSrc sourceName;
   }).overrideAttrs (old: {
     # musl, static linking
     postPatch = ''
@@ -97,24 +33,23 @@ rec {
     '';
   });
 
-  warteraum = callPackage warteraumDrv {
-    stdenv = clangStdenv;
-    redo = redo-c;
-    inherit scryptSalt apiTokens;
+  warteraum = pkgs.callPackage ./nix/warteraum.nix {
+    stdenv = pkgs.clangStdenv;
+    redo = pkgs.redo-c;
+    inherit scryptSalt apiTokens rootSrc sourceName;
   };
 
   bahnhofshalle =
     let
-      nodePackages = import ./bahnhofshalle/node2nix { inherit pkgs nodejs; };
+      nodePackages = import ./bahnhofshalle/node2nix { inherit pkgs; inherit (pkgs) nodejs; };
       nodeDeps = nodePackages.shell.nodeDependencies;
-    in stdenv.mkDerivation {
+    in pkgs.stdenv.mkDerivation {
       pname = "bahnhofshalle";
       inherit version;
 
-      inherit src;
-      sourceRoot = sourceName + "/bahnhofshalle";
+      src = rootSrc + "/bahnhofshalle";
 
-      buildInputs = [ nodejs ];
+      buildInputs = [ pkgs.nodejs ];
 
       buildPhase = ''
         export PARCEL_WORKERS=$NIX_BUILD_CORES
@@ -136,30 +71,37 @@ rec {
 
   anzeigetafel =
     let
-      pythonEnv = python3.withPackages (p: with p; [ pillow requests ]);
-      libPath = "$out/lib/${pythonEnv.libPrefix}/site-lib";
-    in stdenv.mkDerivation {
-      pname = "anzeigetafel";
-      inherit version;
+      drv = { buildPythonApplication, unifont, flipdots, flipdot-gschichtler }:
+        buildPythonApplication {
+          pname = "anzeigetafel";
+          inherit version;
 
-      inherit src;
-      sourceRoot = sourceName + "/anzeigetafel";
+          src = rootSrc + "/anzeigetafel";
 
-      buildInputs = [ pythonEnv makeWrapper ];
+          propagatedBuildInputs = [ flipdots flipdot-gschichtler ];
 
-      patchPhase = ''
-        sed -i 's|FONT =.*$|FONT = "${unifont}/share/fonts/truetype/unifont.ttf"|' anzeigetafel.py
-      '';
+          doCheck = false;
 
-      installPhase = ''
-        install -Dm755 anzeigetafel.py $out/bin/anzeigetafel
-        mkdir -p ${libPath}/flipdots
-        cp -r ../third_party/flipdots/scripts ${libPath}/flipdots/scripts
-      '';
+          patchPhase = ''
+            rm flipdots flipdot_gschichtler
 
-      postFixup = ''
-        wrapProgram $out/bin/anzeigetafel \
-          --prefix PYTHONPATH : "${libPath}"
-      '';
+            sed -i "s/version = '.*'/version = '${version}'/" setup.py
+
+            sed -i 's|FONT =.*$|FONT = "${unifont}/share/fonts/truetype/unifont.ttf"|' anzeigetafel.py
+          '';
+        };
+    in python3.pkgs.callPackage drv { };
+
+
+  python3 = pkgs.python3.override {
+    packageOverrides = self: super: {
+      flipdots = self.callPackage ./nix/python-flipdots.nix {
+        inherit rootSrc;
+      };
+
+      flipdot-gschichtler = self.callPackage ./nix/python-flipdot-gschichtler.nix {
+        inherit rootSrc;
+      };
     };
+  };
 }
