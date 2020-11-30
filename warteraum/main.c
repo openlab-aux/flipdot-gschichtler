@@ -50,28 +50,31 @@ void cleanup(int signum) {
 
 // adjust pointer and length so it points to a string that
 // has no leading nor trailing whitespace
-void trim_whitespace(char **str, int *len) {
-  if(*len > 0) {
-    int new_len = *len;
+void trim_whitespace(struct http_string_s *s) {
+  const char *str = s->buf;
+  int len = s->len;
+
+  if(len > 0) {
+    int new_len = len;
     int new_start = 0;
 
     int pos = 0;
-    while(isspace(*(*str + pos)) && pos < *len) {
+    while(isspace(*(str + pos)) && pos < len) {
       new_start++;
       new_len--;
       pos++;
     }
 
     if(new_len > 0) {
-      pos = *len - 1;
-      while(isspace(*(*str + pos)) && pos > new_start) {
+      pos = len - 1;
+      while(isspace(*(str + pos)) && pos > new_start) {
         new_len--;
         pos--;
       }
     }
 
-    *len = new_len;
-    *str = *str + new_start;
+    s->len = new_len;
+    s->buf = str + new_start;
   }
 }
 
@@ -259,28 +262,29 @@ enum warteraum_result response_queue_add(enum warteraum_version version, http_re
     return WARTERAUM_BAD_REQUEST;
   }
 
-  char *decoded = malloc(sizeof(char) * text.len);
-  char *decoded_mem = decoded; // so we can advance the decoded pointer
+  char *decoded_mem = malloc(text.len); // so we can advance the decoded pointer
+  http_string_t decoded;
 
-  if(decoded == NULL) {
+  if(decoded_mem == NULL) {
     return WARTERAUM_INTERNAL_ERROR;
   }
 
-  int decoded_len = urldecode(text, decoded, sizeof(char) * text.len);
+  decoded.len = urldecode(text, decoded_mem, sizeof(char) * text.len);
+  decoded.buf = decoded_mem;
 
-  trim_whitespace(&decoded, &decoded_len);
+  trim_whitespace(&decoded);
 
-  if(decoded_len <= 0) {
+  if(decoded.len <= 0) {
     free(decoded_mem);
     return WARTERAUM_BAD_REQUEST;
   }
 
-  if(decoded_len > MAX_TEXT_LEN) {
+  if(decoded.len > MAX_TEXT_LEN) {
     free(decoded_mem);
     return WARTERAUM_TOO_LONG;
   }
 
-  queue_append(&flip_queue, decoded, (size_t) decoded_len);
+  queue_append(&flip_queue, decoded.buf, (size_t) decoded.len);
 
   free(decoded_mem);
 
