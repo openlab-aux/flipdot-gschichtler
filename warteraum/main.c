@@ -40,10 +40,38 @@
 static struct queue flip_queue;
 static struct http_server_s* server;
 
+static struct http_string_s announcement;
+
+void delete_announcement(void) {
+  if(announcement.buf != NULL) {
+    free((void *) announcement.buf);
+  }
+  announcement.len = -1;
+  announcement.buf = NULL;
+}
+
+bool set_announcement(http_string_t s) {
+  delete_announcement();
+
+  char *new_buf = malloc(s.len);
+
+  if(new_buf == NULL) {
+    return false;
+  }
+
+  memcpy(new_buf, s.buf, s.len);
+
+  announcement.len = s.len;
+  announcement.buf = new_buf;
+
+  return true;
+}
+
 void cleanup(int signum) {
   if(signum == SIGTERM || signum == SIGINT) {
     queue_free(flip_queue);
     free(server);
+    delete_announcement();
     exit(EXIT_SUCCESS);
   }
 }
@@ -410,6 +438,185 @@ enum warteraum_result response_queue_del(http_string_t id_str, enum warteraum_ve
   }
 }
 
+int make_announcement_response(struct ej_context *ctx) {
+  int status;
+
+  ej_object(ctx);
+  EJ_STATIC_BIND(ctx, "announcement");
+
+  if(announcement.len > 0 && announcement.buf != NULL) {
+    ej_string(ctx, announcement.buf, announcement.len);
+    status = 200;
+  } else {
+    ej_null(ctx);
+    status = 404;
+  }
+
+  ej_object_end(ctx);
+
+  return status;
+}
+
+// GET, PUT /api/v2/announcement
+enum warteraum_result response_announcement(enum warteraum_version v, http_request_t *request, http_response_t *response) {
+  (void) v; // surpress warnings
+
+  http_string_t method = http_request_method(request);
+
+  if(HTTP_STRING_IS(method, "GET") || HTTP_STRING_IS(method, "PUT")) {
+    int status = 200;
+
+    struct ej_context ctx;
+    size_t buf_size = 0;
+    char *buf = NULL;
+    FILE *out = open_memstream(&buf, &buf_size);
+
+    if(out == NULL) {
+      return WARTERAUM_INTERNAL_ERROR;
+    }
+
+    ej_init(&ctx, out);
+
+    if(HTTP_STRING_IS(method, "GET")) {
+      status = make_announcement_response(&ctx);
+    } else if(HTTP_STRING_IS(method, "PUT")) {
+      http_string_t content_type = http_request_header(request, "Content-Type");
+
+      if(!MATCH_CONTENT_TYPE(content_type, "application/x-www-form-urlencoded")) {
+        fclose(out);
+        free(buf);
+        return WARTERAUM_BAD_REQUEST;
+      }
+
+      http_string_t body = http_request_body(request);
+
+      if(body.len > MAX_BODY_LEN) {
+        fclose(out);
+        free(buf);
+        return WARTERAUM_TOO_LONG;
+      }
+
+      http_string_t text;
+      http_string_t token;
+      const struct form_field_spec text_body_spec[] = {
+        { STATIC_HTTP_STRING("text"), FIELD_TYPE_STRING, &text },
+        { STATIC_HTTP_STRING("token"), FIELD_TYPE_STRING, &token },
+      };
+
+      bool parse_result = STATIC_FORM_PARSE(body, text_body_spec);
+
+      if(!parse_result) {
+        fclose(out);
+        free(buf);
+        return WARTERAUM_BAD_REQUEST;
+      }
+
+      errno = 0;
+      bool token_matches = authenticate(token);
+
+      if(errno != 0) {
+        fclose(out);
+        free(buf);
+        return WARTERAUM_INTERNAL_ERROR;
+      }
+
+      if(!token_matches) {
+        fclose(out);
+        free(buf);
+        return WARTERAUM_UNAUTHORIZED;
+      }
+
+      http_string_t decoded;
+      char *decoded_mem = malloc(text.len);
+
+      if(decoded_mem == NULL) {
+        fclose(out);
+        free(buf);
+        return WARTERAUM_INTERNAL_ERROR;
+      }
+
+      decoded.len = urldecode(text, decoded_mem, (size_t) text.len);
+      decoded.buf = decoded_mem;
+
+      trim_whitespace(&decoded);
+
+      if(decoded.len <= 0) {
+        free(decoded_mem);
+        fclose(out);
+        free(buf);
+        return WARTERAUM_INTERNAL_ERROR;
+      }
+
+      bool update_result = set_announcement(decoded) &&
+        (make_announcement_response(&ctx) == 200);
+
+      free(decoded_mem);
+
+      if(!update_result) {
+        fclose(out);
+        free(buf);
+        return WARTERAUM_INTERNAL_ERROR;
+      }
+    }
+
+    fclose(out);
+
+    http_response_status(response, status);
+    http_response_header(response, "Content-Type", "application/json");
+    http_response_body(response, buf, (int) ctx.written);
+    http_respond(request, response);
+
+    free(buf);
+  } else if(HTTP_STRING_IS(method, "DELETE")) {
+    http_string_t content_type = http_request_header(request, "Content-Type");
+
+    if(!MATCH_CONTENT_TYPE(content_type, "application/x-www-form-urlencoded")) {
+      return WARTERAUM_BAD_REQUEST;
+    }
+
+    http_string_t body = http_request_body(request);
+
+    if(body.len > MAX_BODY_LEN) {
+      return WARTERAUM_TOO_LONG;
+    }
+
+    http_string_t token;
+    const struct form_field_spec token_body_spec[] = {
+      { STATIC_HTTP_STRING("token"), FIELD_TYPE_STRING, &token }
+    };
+
+    bool parse_result = STATIC_FORM_PARSE(body, token_body_spec);
+
+    if(!parse_result) {
+      return WARTERAUM_BAD_REQUEST;
+    }
+
+    errno = 0;
+    bool token_matches = authenticate(token);
+    if(errno != 0) {
+      // scrypt failed
+      return WARTERAUM_INTERNAL_ERROR;
+    }
+
+    if(!token_matches) {
+      return WARTERAUM_UNAUTHORIZED;
+    }
+
+    delete_announcement();
+
+    http_response_status(response, 204);
+    http_respond(request, response);
+  } else {
+    return WARTERAUM_BAD_REQUEST;
+  }
+
+  // common for GET and PUT
+
+  // we always return okay, since we want a custom 404 response if
+  // we don't have an announcement
+  return WARTERAUM_OK;
+}
+
 void handle_request(http_request_t *request) {
   // TODO remove this for production?
   // Sending Connection: close avoids memory leaks
@@ -457,6 +664,8 @@ void handle_request(http_request_t *request) {
             // /api/v2/queue/<id>
             status = response_queue_del(segs[3], api_version, request, response);
           }
+        } else if(SEGMENT_MATCH_LAST(2, "announcement", segs, count)) {
+          status = response_announcement(api_version, request, response);
         }
       }
     }

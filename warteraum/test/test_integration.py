@@ -51,6 +51,28 @@ def test_queue_404_format():
     assert r.status_code == 404
     assert 'not found' in r.json()['error']
 
+def test_announcement_formats():
+    my_text = 'important news'
+
+    r = requests.delete(BASE_URL + '/api/v2/announcement', data = { 'token' : TOKEN })
+    assert r.status_code == 204
+
+    r1 = requests.get(BASE_URL + '/api/v2/announcement')
+    assert r1.status_code == 404
+    assert r1.json()['announcement'] == None
+
+    r2 = requests.put(BASE_URL + '/api/v2/announcement', data = { 'text' : my_text, 'token' : TOKEN })
+    assert r2.status_code == 200
+    assert r2.json()['announcement'] == my_text
+
+    r3 = requests.get(BASE_URL + '/api/v2/announcement')
+    assert r3.status_code == 200
+    assert r3.json()['announcement'] == my_text
+
+    # check that token is required
+    r4 = requests.put(BASE_URL + '/api/v2/announcement', data = { 'text' : 'oops' })
+    assert r4.status_code == 400
+
 # /api/v2/queue/add input validation and normalization
 
 def test_strip_whitespace():
