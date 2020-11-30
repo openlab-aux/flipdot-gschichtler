@@ -50,11 +50,11 @@ if command -v pytest > /dev/null; then
 
   sleep 1
 
-  grep "All heap blocks were freed" valgrind-log.txt
-  all_freed=$?
+  all_freed=0
+  no_errors=0
 
-  grep "ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)" valgrind-log.txt
-  no_errors=$?
+  grep "All heap blocks were freed" valgrind-log.txt || all_freed=$?
+  grep "ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)" valgrind-log.txt || no_errors=$?
 
   if ! (( $all_freed && $no_errors )); then
     echo -e "\nvalgrind test\tokay"
