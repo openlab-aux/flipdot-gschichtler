@@ -137,6 +137,28 @@ def test_correct_failure_with_valid_token():
         api.delete(highest_id + 1)
         assert err.status == 404
 
+def test_expected_authentication_failures_announcement():
+    my_announcement = 'announcement works'
+
+    for t in WRONG_TOKENS:
+        tmp_client = FlipdotGschichtlerClient(BASE_URL, api_token = t)
+
+        with pytest.raises(FlipdotGschichtlerError) as exc_info:
+            tmp_client.delete_announcement()
+
+        assert exc_info.value.status == 401
+
+        api.delete_announcement()
+
+        with pytest.raises(FlipdotGschichtlerError) as exc_info:
+            tmp_client.set_announcement(my_announcement)
+
+        assert exc_info.value.status == 401
+
+        api.set_announcement(my_announcement)
+
+        assert tmp_client.announcement() == my_announcement
+
 # queue properties
 
 def test_queue_ascending_ids():
