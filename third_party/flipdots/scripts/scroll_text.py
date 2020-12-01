@@ -6,6 +6,7 @@ from PIL import Image, ImageFont, ImageDraw
 import sys
 import fileinput
 import threading
+from pathlib import PurePath
 
 UDPHOST="flipdot.lab"
 UDPPORT=2323
@@ -37,7 +38,11 @@ def array2packet(a):
     return bytearray([list2byte(a[i*8:i*8+8]) for i in range(int(len(a)/8))])
 
 def str2array(s,font):
-    font = ImageFont.truetype(font=font,size=FONT_SIZE)
+    # load a pillow font directly
+    if PurePath(font).suffix == '.pil':
+        font = ImageFont.load(font)
+    else:
+        font = ImageFont.truetype(font=font,size=FONT_SIZE)
 
     img_width = font.getsize(s)[0]
     image     = Image.new("RGBA", (img_width,DISPLAY_SIZE[1]), C_BLACK)

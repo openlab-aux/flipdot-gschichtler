@@ -89,7 +89,7 @@ rec {
 
             sed -i "s/version = '.*'/version = '${version}'/" setup.py
 
-            sed -i 's|FONT =.*$|FONT = "${unifont}/share/fonts/truetype/unifont.ttf"|' anzeigetafel.py
+            sed -i 's|FONT =.*$|FONT = "${unifont-pil}/share/fonts/unifont.pil"|' anzeigetafel.py
           '';
         };
     in python3.pkgs.callPackage drv { };
@@ -106,4 +106,13 @@ rec {
       };
     };
   };
+
+  pilfont = python3.pkgs.callPackage ./nix/pilfont.nix { };
+
+  unifont-pil = pkgs.runCommandLocal "unifont-pil" {} ''
+    mkdir -p $out/share/fonts/
+    ${pkgs.gzip}/bin/gunzip < ${pkgs.unifont}/share/fonts/unifont.pcf.gz > unifont.pcf
+    ${pilfont}/bin/pilfont unifont.pcf
+    cp unifont.* $out/share/fonts/
+  '';
 }
