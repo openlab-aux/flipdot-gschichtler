@@ -95,9 +95,10 @@ def test_expected_authentication_failures():
         my_id = tmp_client.add(t)
 
         # but not delete them
-        with pytest.raises(FlipdotGschichtlerError) as err:
+        with pytest.raises(FlipdotGschichtlerError) as exc_info:
             tmp_client.delete(my_id)
-            assert err.status == 403
+
+        assert exc_info.value.status == 401
 
         # what our normal client can do
         api.delete(my_id)
