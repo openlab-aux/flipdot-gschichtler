@@ -4,9 +4,16 @@ import requests
 class FlipdotGschichtlerError(Exception):
     """Error from the REST API"""
     def __init__(self, endpoint, status, message):
+        # make this a proper exception
+        super().__init__(message)
+
         self.endpoint = endpoint
         self.status = status
         self.message = message
+
+    def __str__(self):
+        return "Endpoint {} returned {} with message \"{}\"".format(
+            self.endpoint, str(self.status), self.message)
 
 class FlipdotGschichtlerClient():
     def __init__(self, base_url, api_token = None):
