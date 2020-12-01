@@ -89,7 +89,7 @@ rec {
 
             sed -i "s/version = '.*'/version = '${version}'/" setup.py
 
-            sed -i 's|FONT =.*$|FONT = "${unifont}/share/fonts/truetype/unifont.ttf"|' anzeigetafel.py
+            sed -i 's|FONT =.*$|FONT = "${unifont}/share/fonts/unifont.pcf.gz"|' anzeigetafel.py
           '';
         };
     in python3.pkgs.callPackage drv { };
