@@ -24,6 +24,12 @@ case "$2" in
   hashtoken)
     redo-ifchange scrypt.h
     ;;
+  announcement)
+    redo-ifchange ../third_party/httpserver.h/httpserver.h
+    ;;
+  http_string)
+    redo-ifchange ../third_party/httpserver.h/httpserver.h
+    ;;
 esac
 
 $CC $CFLAGS -o "$3" -c "$2.c"

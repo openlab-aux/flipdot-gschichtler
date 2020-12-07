@@ -69,12 +69,16 @@ class FlipdotGschichtlerClient():
             message = self.__get_error_message(r)
             raise FlipdotGschichtlerClient(endpoint, r.status_code, message)
 
-    def announcement(self):
+    def announcement(self, with_expiry = False):
         endpoint = '/api/v2/announcement'
         r = requests.get(self.base_url + endpoint)
 
         if r.status_code == 200:
-            return r.json()['announcement']
+            j = r.json()
+            if with_expiry:
+                return { 'text' : j['announcement'], 'expiry' : j['expiry_utc'] }
+            else:
+                return j['announcement']
         elif r.status_code == 404:
             # no / empty announcement
             assert 'announcement' in r.json()
@@ -83,12 +87,23 @@ class FlipdotGschichtlerClient():
             message = self.__get_error_message(r)
             raise FlipdotGschichtlerError(endpoint, r.status_code, message)
 
-    def set_announcement(self, text):
+    def set_announcement(self, text, expiry = None):
         if self.api_token == None:
             raise FlipdotGschichtlerNoToken
 
+        request = {
+            'text': text,
+            'token': self.api_token
+        }
+
+        if expiry != None:
+            if type(expiry) is int:
+                request['expiry_utc'] = expiry
+            else:
+                raise TypeError('expiry is expected to be an integer')
+
         endpoint = '/api/v2/announcement'
-        r = requests.put(self.base_url + endpoint, data = { 'text': text, 'token': self.api_token })
+        r = requests.put(self.base_url + endpoint, data = request)
 
         if r.status_code != 200:
             message = self.__get_error_message(r)

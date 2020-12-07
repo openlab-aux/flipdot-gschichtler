@@ -159,9 +159,16 @@ text. If one exists, the following response format is used:
 
 ---------------------------
 {
-  "announcement": "some announcement text"
+  "announcement": "some announcement text",
+  "expiry_utc": 1607383640
 }
 ---------------------------
+
+`expiriy_utc` describes the expiry time of the announcement in
+seconds since 1970-01-01 00:00 UTC. Note the expiry time doesn't
+necessarily need to be checked manually as the endpoint guarantees
+to never return an expired announcement. If the announcement
+never expires, `expiry_utc` is `null`.
 
 If however no announcement text has been set (or it has been
 deleted), the response looks like this and is returned with
@@ -169,7 +176,8 @@ a response status of 404:
 
 ---------------------------
 {
-  "announcement": null
+  "announcement": null,
+  "expiry_utc": null
 }
 ---------------------------
 
@@ -198,8 +206,9 @@ call to this endpoint must send a form with
 the following fields:
 
 |=============================================
-| `text`  | text to be added to the queue
-| `token` | API token of the application
+| `text`       | text to be added to the queue
+| `token`      | API token of the application
+| `expiry_utc` | Optional: time in seconds since the unix epoch the announcement expires (is deleted) at
 |=============================================
 
 The response contains the announcement in the
@@ -208,9 +217,13 @@ except it's guaranteed to never be `null`:
 
 ----------------------
 {
-  "announcement": "new announcement"
+  "announcement": "new announcement",
+  "expiry_utc": null
 }
 ----------------------
+
+`expiry_utc` will of course hold a timestamp if
+one was given in the request.
 
 |=============================================
 | HTTP Status  | Meaning

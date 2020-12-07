@@ -44,7 +44,7 @@ if command -v pytest > /dev/null; then
 
   sleep 3
 
-  pytest ./test_integration.py
+  pytest -v ./test_integration.py
 
   kill $pid
 

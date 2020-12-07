@@ -6,11 +6,13 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "emitjson.h"
 
 #include "http_string.h"
 
+#include "announcement.h"
 #include "queue.h"
 #include "routing.h"
 #include "form.h"
@@ -40,38 +42,13 @@
 static struct queue flip_queue;
 static struct http_server_s* server;
 
-static struct http_string_s announcement;
-
-void delete_announcement(void) {
-  if(announcement.buf != NULL) {
-    free((void *) announcement.buf);
-  }
-  announcement.len = -1;
-  announcement.buf = NULL;
-}
-
-bool set_announcement(http_string_t s) {
-  delete_announcement();
-
-  char *new_buf = malloc(s.len);
-
-  if(new_buf == NULL) {
-    return false;
-  }
-
-  memcpy(new_buf, s.buf, s.len);
-
-  announcement.len = s.len;
-  announcement.buf = new_buf;
-
-  return true;
-}
+static struct warteraum_announcement announcement;
 
 void cleanup(int signum) {
   if(signum == SIGTERM || signum == SIGINT) {
     queue_free(flip_queue);
     free(server);
-    delete_announcement();
+    announcement_delete(&announcement);
     exit(EXIT_SUCCESS);
   }
 }
@@ -399,18 +376,8 @@ enum warteraum_result response_queue_del(http_string_t id_str, enum warteraum_ve
     return WARTERAUM_UNAUTHORIZED;
   }
 
-  char *id_zero_terminated = malloc(sizeof(char) * (id_str.len + 1));
-  if(id_zero_terminated == NULL) {
-    return WARTERAUM_INTERNAL_ERROR;
-  }
-
-  memcpy(id_zero_terminated, id_str.buf, id_str.len);
-  id_zero_terminated[id_str.len] = '\0';
-
   errno = 0;
-  unsigned long int id = strtoul(id_zero_terminated, NULL, 10);
-
-  free(id_zero_terminated);
+  unsigned long int id = http_string_to_uint(id_str);
 
   // check for conversion errors
   // also abort if id is greater than max id
@@ -444,12 +411,19 @@ int make_announcement_response(struct ej_context *ctx) {
   ej_object(ctx);
   EJ_STATIC_BIND(ctx, "announcement");
 
-  if(announcement.len > 0 && announcement.buf != NULL) {
-    ej_string(ctx, announcement.buf, announcement.len);
+  if(announcement.text.len > 0 && announcement.text.buf != NULL) {
+    ej_string(ctx, announcement.text.buf, announcement.text.len);
     status = 200;
   } else {
     ej_null(ctx);
     status = 404;
+  }
+
+  EJ_STATIC_BIND(ctx, "expiry_utc");
+  if(announcement.announcement_expires) {
+    ej_int(ctx, announcement.announcement_expiry);
+  } else {
+    ej_null(ctx);
   }
 
   ej_object_end(ctx);
@@ -460,6 +434,12 @@ int make_announcement_response(struct ej_context *ctx) {
 // GET, PUT /api/v2/announcement
 enum warteraum_result response_announcement(enum warteraum_version v, http_request_t *request, http_response_t *response) {
   (void) v; // surpress warnings
+
+  // instead of using a separate thread or something
+  // we check expiry every time it is requested
+  if(announcement_expired(announcement)) {
+    announcement_delete(&announcement);
+  }
 
   http_string_t method = http_request_method(request);
 
@@ -498,9 +478,12 @@ enum warteraum_result response_announcement(enum warteraum_version v, http_reque
 
       http_string_t text;
       http_string_t token;
+      http_string_t expiry_utc_str;
+
       const struct form_field_spec text_body_spec[] = {
         { STATIC_HTTP_STRING("text"), FIELD_TYPE_STRING, &text },
         { STATIC_HTTP_STRING("token"), FIELD_TYPE_STRING, &token },
+        { STATIC_HTTP_STRING("expiry_utc"), FIELD_TYPE_OPTIONAL_STRING, &expiry_utc_str },
       };
 
       bool parse_result = STATIC_FORM_PARSE(body, text_body_spec);
@@ -544,11 +527,72 @@ enum warteraum_result response_announcement(enum warteraum_version v, http_reque
         free(decoded_mem);
         fclose(out);
         free(buf);
-        return WARTERAUM_INTERNAL_ERROR;
+        return WARTERAUM_BAD_REQUEST;
       }
 
-      bool update_result = set_announcement(decoded) &&
-        (make_announcement_response(&ctx) == 200);
+      bool update_result = false;
+
+      // check if we have an expiry time
+      if(expiry_utc_str.len == -1) {
+        update_result = announcement_set(&announcement, decoded) &&
+          (make_announcement_response(&ctx) == 200);
+      } else {
+        time_t expiry_utc;
+
+        http_string_t expiry_utc_decoded;
+        char *expiry_utc_decoded_mem = malloc(expiry_utc_str.len);
+
+        if(expiry_utc_decoded_mem == NULL) {
+          fclose(out);
+          free(buf);
+          free(decoded_mem);
+          return WARTERAUM_INTERNAL_ERROR;
+        }
+
+        expiry_utc_decoded.len = urldecode(expiry_utc_str, expiry_utc_decoded_mem, (size_t) expiry_utc_str.len);
+        expiry_utc_decoded.buf = expiry_utc_decoded_mem;
+
+        if(expiry_utc_decoded.len <= 0) {
+          free(decoded_mem);
+          free(expiry_utc_decoded_mem);
+          fclose(out);
+          free(buf);
+          return WARTERAUM_BAD_REQUEST;
+        }
+
+        bool valid = true;
+
+        // check if its a proper number
+        for(int i = 0; i < expiry_utc_decoded.len; i++) {
+          if(!isdigit(expiry_utc_decoded.buf[i])) {
+            valid = false;
+          }
+        }
+
+        if(valid) {
+          errno = 0;
+          unsigned long long tmp = http_string_to_uint(expiry_utc_decoded);
+
+          if(errno != 0 || tmp > LONG_MAX) {
+            valid = false;
+          } else {
+            expiry_utc = (time_t) tmp;
+          }
+        }
+
+        if(!valid) {
+          free(decoded_mem);
+          free(expiry_utc_decoded_mem);
+          fclose(out);
+          free(buf);
+          return WARTERAUM_BAD_REQUEST;
+        }
+
+        update_result = announcement_set_expiring(&announcement, decoded, expiry_utc) &&
+          (make_announcement_response(&ctx) == 200);
+
+        free(expiry_utc_decoded_mem);
+      }
 
       free(decoded_mem);
 
@@ -602,7 +646,7 @@ enum warteraum_result response_announcement(enum warteraum_version v, http_reque
       return WARTERAUM_UNAUTHORIZED;
     }
 
-    delete_announcement();
+    announcement_delete(&announcement);
 
     http_response_status(response, 204);
     http_respond(request, response);
@@ -680,6 +724,7 @@ void handle_request(http_request_t *request) {
 
 int main(void) {
   queue_new(&flip_queue);
+  announcement_new(&announcement);
 
   signal(SIGTERM, cleanup);
   signal(SIGINT, cleanup);
