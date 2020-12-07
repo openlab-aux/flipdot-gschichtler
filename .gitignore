@@ -16,6 +16,7 @@ vgcore.*
 .dep.*
 .depend.*
 .target.*
+.lock.*
 
 /bahnhofshalle/node_modules
 /bahnhofshalle/.cache
