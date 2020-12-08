@@ -1,7 +1,9 @@
-import requests
 from flipdot_gschichtler import FlipdotGschichtlerClient, FlipdotGschichtlerError
+import math
 import pytest
+import requests
 import sys
+import time
 
 BASE_URL = 'http://localhost:9000'
 TOKEN = 'hannes'
@@ -50,6 +52,37 @@ def test_queue_404_format():
 
     assert r.status_code == 404
     assert 'not found' in r.json()['error']
+
+def test_announcement_formats():
+    my_text = 'important news'
+    my_timestamp = 1607356134
+
+    r = requests.delete(BASE_URL + '/api/v2/announcement', data = { 'token' : TOKEN })
+    assert r.status_code == 204
+
+    r1 = requests.get(BASE_URL + '/api/v2/announcement')
+    assert r1.status_code == 404
+    assert r1.json()['announcement'] == None
+    assert r1.json()['expiry_utc'] == None
+
+    r2 = requests.put(BASE_URL + '/api/v2/announcement', data = { 'text' : my_text, 'token' : TOKEN })
+    assert r2.status_code == 200
+    assert r2.json()['announcement'] == my_text
+    assert r1.json()['expiry_utc'] == None
+
+    r3 = requests.get(BASE_URL + '/api/v2/announcement')
+    assert r3.status_code == 200
+    assert r3.json()['announcement'] == my_text
+    assert r1.json()['expiry_utc'] == None
+
+    # check that token is required
+    r4 = requests.put(BASE_URL + '/api/v2/announcement', data = { 'text' : 'oops' })
+    assert r4.status_code == 400
+
+    r5 = requests.put(BASE_URL + '/api/v2/announcement', data = { 'text' : my_text, 'token' : TOKEN, 'expiry_utc' : my_timestamp })
+    assert r5.status_code == 200
+    assert r5.json()['announcement'] == my_text
+    assert r5.json()['expiry_utc'] == my_timestamp
 
 # /api/v2/queue/add input validation and normalization
 
@@ -115,6 +148,28 @@ def test_correct_failure_with_valid_token():
         api.delete(highest_id + 1)
         assert err.status == 404
 
+def test_expected_authentication_failures_announcement():
+    my_announcement = 'announcement works'
+
+    for t in WRONG_TOKENS:
+        tmp_client = FlipdotGschichtlerClient(BASE_URL, api_token = t)
+
+        with pytest.raises(FlipdotGschichtlerError) as exc_info:
+            tmp_client.delete_announcement()
+
+        assert exc_info.value.status == 401
+
+        api.delete_announcement()
+
+        with pytest.raises(FlipdotGschichtlerError) as exc_info:
+            tmp_client.set_announcement(my_announcement)
+
+        assert exc_info.value.status == 401
+
+        api.set_announcement(my_announcement)
+
+        assert tmp_client.announcement() == my_announcement
+
 # queue properties
 
 def test_queue_ascending_ids():
@@ -153,3 +208,17 @@ def test_reassigning_only_after_emptying():
     assert api.add('only text') == 0
     assert len(api.queue()) == 1
     assert api.queue()[0]['id'] == 0
+
+# announcement properties
+
+def test_announcement_expiring():
+    my_text = 'this announcement will become irrelevant'
+    in_thirty = math.floor(time.time()) + 30
+
+    api.set_announcement(my_text, expiry = in_thirty)
+
+    assert api.announcement(with_expiry = True) == { 'text' : my_text, 'expiry' : in_thirty }
+
+    time.sleep(35)
+
+    assert api.announcement() == None

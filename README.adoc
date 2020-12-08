@@ -145,6 +145,118 @@ authenticate itself:
 | 415          | Request body too big
 |=============================================
 
+GET `/api/v2/announcement`
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+|=============================================
+| Request Content-Type  | none
+| Response Content-Type | `application/json`
+| Authentication        | no
+|=============================================
+
+The endpoint can be used to query the current announcement
+text. If one exists, the following response format is used:
+
+---------------------------
+{
+  "announcement": "some announcement text",
+  "expiry_utc": 1607383640
+}
+---------------------------
+
+`expiriy_utc` describes the expiry time of the announcement in
+seconds since 1970-01-01 00:00 UTC. Note the expiry time doesn't
+necessarily need to be checked manually as the endpoint guarantees
+to never return an expired announcement. If the announcement
+never expires, `expiry_utc` is `null`.
+
+If however no announcement text has been set (or it has been
+deleted), the response looks like this and is returned with
+a response status of 404:
+
+---------------------------
+{
+  "announcement": null,
+  "expiry_utc": null
+}
+---------------------------
+
+|=============================================
+| HTTP Status  | Meaning
+| 200          | Success
+| 404          | No announcement text is set
+|=============================================
+
+PUT `/api/v2/announcement`
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+|=============================================
+| Request Content-Type  | `application/x-www-form-urlencoded`
+| Response Content-Type | `application/json`
+| Authentication        | yes (see below)
+|=============================================
+
+This endpoint allows you to set the announcement
+text which will be displayed on the panel (if
+enabled) during times when the queue is empty.
+
+Since the API call overwrites previous content,
+it requires authentication additionally. Any
+call to this endpoint must send a form with
+the following fields:
+
+|=============================================
+| `text`       | text to be added to the queue
+| `token`      | API token of the application
+| `expiry_utc` | Optional: time in seconds since the unix epoch the announcement expires (is deleted) at
+|=============================================
+
+The response contains the announcement in the
+same format as the `GET` variant of this endpoint,
+except it's guaranteed to never be `null`:
+
+----------------------
+{
+  "announcement": "new announcement",
+  "expiry_utc": null
+}
+----------------------
+
+`expiry_utc` will of course hold a timestamp if
+one was given in the request.
+
+|=============================================
+| HTTP Status  | Meaning
+| 200          | Success, announcement set
+| 400          | Illegal method or malformed request
+| 415          | Request body too big or text field longer allowed (usually 512 bytes)
+|=============================================
+
+DELETE `/api/v2/announcement`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+|=============================================
+| Request Content-Type  | `application/x-www-form-urlencoded`
+| Response Content-Type | none
+| Authentication        | yes (see below)
+|=============================================
+
+This endpoint can be used to delete the announcement text.
+The request should send a form with the following fields
+as request body in order to authenticate itself:
+
+|=============================================
+| `token` | API token of the application
+|=============================================
+
+|=============================================
+| HTTP Status  | Meaning
+| 204          | Success, queue entry deleted
+| 400          | Illegal method or malformed request
+| 401          | Unauthorized API token
+| 415          | Request body too big
+|=============================================
+
 API `v1`
 ~~~~~~~
 

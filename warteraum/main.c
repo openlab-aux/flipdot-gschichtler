@@ -6,11 +6,13 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "emitjson.h"
 
 #include "http_string.h"
 
+#include "announcement.h"
 #include "queue.h"
 #include "routing.h"
 #include "form.h"
@@ -40,10 +42,13 @@
 static struct queue flip_queue;
 static struct http_server_s* server;
 
+static struct warteraum_announcement announcement;
+
 void cleanup(int signum) {
   if(signum == SIGTERM || signum == SIGINT) {
     queue_free(flip_queue);
     free(server);
+    announcement_delete(&announcement);
     exit(EXIT_SUCCESS);
   }
 }
@@ -371,18 +376,8 @@ enum warteraum_result response_queue_del(http_string_t id_str, enum warteraum_ve
     return WARTERAUM_UNAUTHORIZED;
   }
 
-  char *id_zero_terminated = malloc(sizeof(char) * (id_str.len + 1));
-  if(id_zero_terminated == NULL) {
-    return WARTERAUM_INTERNAL_ERROR;
-  }
-
-  memcpy(id_zero_terminated, id_str.buf, id_str.len);
-  id_zero_terminated[id_str.len] = '\0';
-
   errno = 0;
-  unsigned long int id = strtoul(id_zero_terminated, NULL, 10);
-
-  free(id_zero_terminated);
+  unsigned long int id = http_string_to_uint(id_str);
 
   // check for conversion errors
   // also abort if id is greater than max id
@@ -408,6 +403,262 @@ enum warteraum_result response_queue_del(http_string_t id_str, enum warteraum_ve
   } else {
     return WARTERAUM_ENTRY_NOT_FOUND;
   }
+}
+
+int make_announcement_response(struct ej_context *ctx) {
+  int status;
+
+  ej_object(ctx);
+  EJ_STATIC_BIND(ctx, "announcement");
+
+  if(announcement.text.len > 0 && announcement.text.buf != NULL) {
+    ej_string(ctx, announcement.text.buf, announcement.text.len);
+    status = 200;
+  } else {
+    ej_null(ctx);
+    status = 404;
+  }
+
+  EJ_STATIC_BIND(ctx, "expiry_utc");
+  if(announcement.announcement_expires) {
+    ej_int(ctx, announcement.announcement_expiry);
+  } else {
+    ej_null(ctx);
+  }
+
+  ej_object_end(ctx);
+
+  return status;
+}
+
+// GET, PUT /api/v2/announcement
+enum warteraum_result response_announcement(enum warteraum_version v, http_request_t *request, http_response_t *response) {
+  (void) v; // surpress warnings
+
+  // instead of using a separate thread or something
+  // we check expiry every time it is requested
+  if(announcement_expired(announcement)) {
+    announcement_delete(&announcement);
+  }
+
+  http_string_t method = http_request_method(request);
+
+  if(HTTP_STRING_IS(method, "GET") || HTTP_STRING_IS(method, "PUT")) {
+    int status = 200;
+
+    struct ej_context ctx;
+    size_t buf_size = 0;
+    char *buf = NULL;
+    FILE *out = open_memstream(&buf, &buf_size);
+
+    if(out == NULL) {
+      return WARTERAUM_INTERNAL_ERROR;
+    }
+
+    ej_init(&ctx, out);
+
+    if(HTTP_STRING_IS(method, "GET")) {
+      status = make_announcement_response(&ctx);
+    } else if(HTTP_STRING_IS(method, "PUT")) {
+      http_string_t content_type = http_request_header(request, "Content-Type");
+
+      if(!MATCH_CONTENT_TYPE(content_type, "application/x-www-form-urlencoded")) {
+        fclose(out);
+        free(buf);
+        return WARTERAUM_BAD_REQUEST;
+      }
+
+      http_string_t body = http_request_body(request);
+
+      if(body.len > MAX_BODY_LEN) {
+        fclose(out);
+        free(buf);
+        return WARTERAUM_TOO_LONG;
+      }
+
+      http_string_t text;
+      http_string_t token;
+      http_string_t expiry_utc_str;
+
+      const struct form_field_spec text_body_spec[] = {
+        { STATIC_HTTP_STRING("text"), FIELD_TYPE_STRING, &text },
+        { STATIC_HTTP_STRING("token"), FIELD_TYPE_STRING, &token },
+        { STATIC_HTTP_STRING("expiry_utc"), FIELD_TYPE_OPTIONAL_STRING, &expiry_utc_str },
+      };
+
+      bool parse_result = STATIC_FORM_PARSE(body, text_body_spec);
+
+      if(!parse_result) {
+        fclose(out);
+        free(buf);
+        return WARTERAUM_BAD_REQUEST;
+      }
+
+      errno = 0;
+      bool token_matches = authenticate(token);
+
+      if(errno != 0) {
+        fclose(out);
+        free(buf);
+        return WARTERAUM_INTERNAL_ERROR;
+      }
+
+      if(!token_matches) {
+        fclose(out);
+        free(buf);
+        return WARTERAUM_UNAUTHORIZED;
+      }
+
+      http_string_t decoded;
+      char *decoded_mem = malloc(text.len);
+
+      if(decoded_mem == NULL) {
+        fclose(out);
+        free(buf);
+        return WARTERAUM_INTERNAL_ERROR;
+      }
+
+      decoded.len = urldecode(text, decoded_mem, (size_t) text.len);
+      decoded.buf = decoded_mem;
+
+      trim_whitespace(&decoded);
+
+      if(decoded.len <= 0) {
+        free(decoded_mem);
+        fclose(out);
+        free(buf);
+        return WARTERAUM_BAD_REQUEST;
+      }
+
+      bool update_result = false;
+
+      // check if we have an expiry time
+      if(expiry_utc_str.len == -1) {
+        update_result = announcement_set(&announcement, decoded) &&
+          (make_announcement_response(&ctx) == 200);
+      } else {
+        time_t expiry_utc;
+
+        http_string_t expiry_utc_decoded;
+        char *expiry_utc_decoded_mem = malloc(expiry_utc_str.len);
+
+        if(expiry_utc_decoded_mem == NULL) {
+          fclose(out);
+          free(buf);
+          free(decoded_mem);
+          return WARTERAUM_INTERNAL_ERROR;
+        }
+
+        expiry_utc_decoded.len = urldecode(expiry_utc_str, expiry_utc_decoded_mem, (size_t) expiry_utc_str.len);
+        expiry_utc_decoded.buf = expiry_utc_decoded_mem;
+
+        if(expiry_utc_decoded.len <= 0) {
+          free(decoded_mem);
+          free(expiry_utc_decoded_mem);
+          fclose(out);
+          free(buf);
+          return WARTERAUM_BAD_REQUEST;
+        }
+
+        bool valid = true;
+
+        // check if its a proper number
+        for(int i = 0; i < expiry_utc_decoded.len; i++) {
+          if(!isdigit(expiry_utc_decoded.buf[i])) {
+            valid = false;
+          }
+        }
+
+        if(valid) {
+          errno = 0;
+          unsigned long long tmp = http_string_to_uint(expiry_utc_decoded);
+
+          if(errno != 0 || tmp > LONG_MAX) {
+            valid = false;
+          } else {
+            expiry_utc = (time_t) tmp;
+          }
+        }
+
+        if(!valid) {
+          free(decoded_mem);
+          free(expiry_utc_decoded_mem);
+          fclose(out);
+          free(buf);
+          return WARTERAUM_BAD_REQUEST;
+        }
+
+        update_result = announcement_set_expiring(&announcement, decoded, expiry_utc) &&
+          (make_announcement_response(&ctx) == 200);
+
+        free(expiry_utc_decoded_mem);
+      }
+
+      free(decoded_mem);
+
+      if(!update_result) {
+        fclose(out);
+        free(buf);
+        return WARTERAUM_INTERNAL_ERROR;
+      }
+    }
+
+    fclose(out);
+
+    http_response_status(response, status);
+    http_response_header(response, "Content-Type", "application/json");
+    http_response_body(response, buf, (int) ctx.written);
+    http_respond(request, response);
+
+    free(buf);
+  } else if(HTTP_STRING_IS(method, "DELETE")) {
+    http_string_t content_type = http_request_header(request, "Content-Type");
+
+    if(!MATCH_CONTENT_TYPE(content_type, "application/x-www-form-urlencoded")) {
+      return WARTERAUM_BAD_REQUEST;
+    }
+
+    http_string_t body = http_request_body(request);
+
+    if(body.len > MAX_BODY_LEN) {
+      return WARTERAUM_TOO_LONG;
+    }
+
+    http_string_t token;
+    const struct form_field_spec token_body_spec[] = {
+      { STATIC_HTTP_STRING("token"), FIELD_TYPE_STRING, &token }
+    };
+
+    bool parse_result = STATIC_FORM_PARSE(body, token_body_spec);
+
+    if(!parse_result) {
+      return WARTERAUM_BAD_REQUEST;
+    }
+
+    errno = 0;
+    bool token_matches = authenticate(token);
+    if(errno != 0) {
+      // scrypt failed
+      return WARTERAUM_INTERNAL_ERROR;
+    }
+
+    if(!token_matches) {
+      return WARTERAUM_UNAUTHORIZED;
+    }
+
+    announcement_delete(&announcement);
+
+    http_response_status(response, 204);
+    http_respond(request, response);
+  } else {
+    return WARTERAUM_BAD_REQUEST;
+  }
+
+  // common for GET and PUT
+
+  // we always return okay, since we want a custom 404 response if
+  // we don't have an announcement
+  return WARTERAUM_OK;
 }
 
 void handle_request(http_request_t *request) {
@@ -457,6 +708,8 @@ void handle_request(http_request_t *request) {
             // /api/v2/queue/<id>
             status = response_queue_del(segs[3], api_version, request, response);
           }
+        } else if(SEGMENT_MATCH_LAST(2, "announcement", segs, count)) {
+          status = response_announcement(api_version, request, response);
         }
       }
     }
@@ -471,6 +724,7 @@ void handle_request(http_request_t *request) {
 
 int main(void) {
   queue_new(&flip_queue);
+  announcement_new(&announcement);
 
   signal(SIGTERM, cleanup);
   signal(SIGINT, cleanup);

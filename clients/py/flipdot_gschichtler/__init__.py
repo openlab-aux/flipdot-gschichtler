@@ -40,7 +40,7 @@ class FlipdotGschichtlerClient():
 
     def delete(self, queue_id):
         if self.api_token is None:
-            raise Exception('missing api token')
+            raise FlipdotGschichtlerNoToken
 
         endpoint = '/api/v2/queue/' + str(queue_id)
         r = requests.delete(self.base_url + endpoint, data = { 'token': self.api_token })
@@ -68,3 +68,54 @@ class FlipdotGschichtlerClient():
         else:
             message = self.__get_error_message(r)
             raise FlipdotGschichtlerClient(endpoint, r.status_code, message)
+
+    def announcement(self, with_expiry = False):
+        endpoint = '/api/v2/announcement'
+        r = requests.get(self.base_url + endpoint)
+
+        if r.status_code == 200:
+            j = r.json()
+            if with_expiry:
+                return { 'text' : j['announcement'], 'expiry' : j['expiry_utc'] }
+            else:
+                return j['announcement']
+        elif r.status_code == 404:
+            # no / empty announcement
+            assert 'announcement' in r.json()
+            return None
+        else:
+            message = self.__get_error_message(r)
+            raise FlipdotGschichtlerError(endpoint, r.status_code, message)
+
+    def set_announcement(self, text, expiry = None):
+        if self.api_token == None:
+            raise FlipdotGschichtlerNoToken
+
+        request = {
+            'text': text,
+            'token': self.api_token
+        }
+
+        if expiry != None:
+            if type(expiry) is int:
+                request['expiry_utc'] = expiry
+            else:
+                raise TypeError('expiry is expected to be an integer')
+
+        endpoint = '/api/v2/announcement'
+        r = requests.put(self.base_url + endpoint, data = request)
+
+        if r.status_code != 200:
+            message = self.__get_error_message(r)
+            raise FlipdotGschichtlerError(endpoint, r.status_code, message)
+
+    def delete_announcement(self):
+        if self.api_token == None:
+            raise FlipdotGschichtlerNoToken
+
+        endpoint = '/api/v2/announcement'
+        r = requests.delete(self.base_url + endpoint, data = { 'token': self.api_token })
+
+        if r.status_code != 204:
+            message = self.__get_error_message(r)
+            raise FlipdotGschichtlerError(endpoint, r.status_code, message)
