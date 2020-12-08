@@ -188,7 +188,12 @@ Same as `/api/v2/queue/<id>`, `v2` only changed the endpoint URL.
 Bug Bounty
 ----------
 
-🤭
+https://github.com/sternenseemann[I]'ll gift anyone who finds serious
+bugs or exploits in `flipdot-gschichtler` a crate of _Mate_ (or another
+beverage if you don't like it) as a reward. Such issues would be remotely
+triggering crashes or segfaults, bypassing authentication, remote code
+execution etc. I won't bother making an exhaustive list or a precise
+list of criteria in the hopes it doesn't come back to haunt me…
 
 Contributing
 ------------
