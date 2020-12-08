@@ -93,7 +93,7 @@ available to the public. There is also no rate
 limiting as of yet, but it may be implemented should
 it become necessary (hopefully not).
 
-The endpointed expects an urlencoded form as request
+The endpoint expects an urlencoded form as request
 body with the following field.
 
 |=============================================
