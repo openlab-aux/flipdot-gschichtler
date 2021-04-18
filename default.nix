@@ -21,7 +21,7 @@ in
 
 rec {
   warteraum-static = pkgs.pkgsStatic.callPackage ./nix/warteraum.nix {
-    # TODO(sterni) clang
+    inherit (pkgs.pkgsStatic.llvmPackages) stdenv;
     inherit scryptSalt apiTokens rootSrc sourceName;
     inherit (python3.pkgs) pytest pytest-randomly requests flipdot-gschichtler;
   };
