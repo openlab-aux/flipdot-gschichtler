@@ -20,23 +20,14 @@ let
 in
 
 rec {
-  warteraum-static = (pkgs.pkgsStatic.callPackage ./nix/warteraum.nix {
-    # todo clang?
-    redo = pkgs.pkgsStatic.redo-c;
+  warteraum-static = pkgs.pkgsStatic.callPackage ./nix/warteraum.nix {
+    # TODO(sterni) clang
     inherit scryptSalt apiTokens rootSrc sourceName;
     inherit (python3.pkgs) pytest pytest-randomly requests flipdot-gschichtler;
-  }).overrideAttrs (old: {
-    # musl, static linking
-    postPatch = ''
-      cat >> ./build_config << EOF
-      CFLAGS="\$CFLAGS -static"
-      EOF
-    '';
-  });
+  };
 
   warteraum = pkgs.callPackage ./nix/warteraum.nix {
     stdenv = pkgs.clangStdenv;
-    redo = pkgs.redo-c;
     inherit scryptSalt apiTokens rootSrc sourceName;
     inherit (python3.pkgs) pytest pytest-randomly requests flipdot-gschichtler;
   };

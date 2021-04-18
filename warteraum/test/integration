@@ -3,34 +3,7 @@
 set -e
 cd "$(dirname "$0")"
 
-redo all
-
-TESTS="queue form routing emitjson"
-
-for t in $TESTS; do
-
-  echo -e "\n# $t tests\n"
-  "./test_$t.exe"
-done
-
-echo -e "\n# test emitjson validity\n"
-
-if command -v jq > /dev/null; then
-  if ./test_emitjson.exe -o | jq; then
-    echo -e "\njson validity\tok"
-  else
-    echo -e "\njson validity\tFAIL"
-    exit 1
-  fi
-else
-  echo -e "json validity\tskipped (missing jq)"
-fi
-
-echo -e "\n# warteraum integration tests\n"
-
 if command -v pytest > /dev/null; then
-  redo ../warteraum
-
   rm -f valgrind-log.txt
 
   valgrind \
@@ -56,10 +29,10 @@ if command -v pytest > /dev/null; then
   grep "All heap blocks were freed" valgrind-log.txt || all_freed=$?
   grep "ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)" valgrind-log.txt || no_errors=$?
 
-  if ! (( $all_freed && $no_errors )); then
-    echo -e "\nvalgrind test\tokay"
+  if [[ $all_freed -eq 0 && $no_errors -eq 0 ]]; then
+    echo -e "\nvalgrind test: okay"
   else
-    echo -e "\nvalgrind test\tfail\n"
+    echo -e "\nvalgrind test: fail\n"
     cat valgrind-log.txt
     exit 1
   fi

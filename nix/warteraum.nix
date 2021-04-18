@@ -1,4 +1,4 @@
-{ stdenv, lib, redo, scrypt
+{ stdenv, lib, scrypt
 , jq, requests, pytest, pytest-randomly, flipdot-gschichtler, valgrind
 , scryptSalt ? null, apiTokens ? null
 , rootSrc, sourceName
@@ -26,7 +26,6 @@ let
   '';
 
   tokensReplace = lib.optionalString (apiTokens != null) ''
-    redo hashtoken
     sed -i '/^  {/d' tokens.h
     sed -i '/^};/d' tokens.h
     ${lib.concatMapStringsSep "\n"
@@ -44,35 +43,28 @@ stdenv.mkDerivation rec {
 
   src = rootSrc;
 
-  # make whole source tree writeable for redo
-  postUnpack = ''
-    chmod -R u+w "$sourceRoot/.."
-  '';
+  makeFlags = [
+    "PREFIX=${placeholder "out"}"
+  ];
+
+  #postUnpack = ''
+  #  chmod -R u+w "$sourceRoot/.."
+  #'';
 
   patchPhase = ''
     runHook prePatch
 
-    patchShebangs test/run
+    patchShebangs test/integration
     ${saltReplace}
     ${tokensReplace}
 
     runHook postPatch
   '';
 
-  buildPhase = "redo";
-
   doCheck = true;
-  checkPhase = "./test/run";
   checkInputs = [
     jq valgrind pytest pytest-randomly requests flipdot-gschichtler
   ];
-
-  installPhase = ''
-    install -Dm755 warteraum -t $out/bin
-    install -Dm755 hashtoken -t $out/bin
-  '';
-
-  nativeBuildInputs = [ redo ];
 
   buildInputs = [ scrypt ];
 }
