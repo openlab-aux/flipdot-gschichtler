@@ -20,20 +20,22 @@ TEST_BINS = test/emitjson.test test/queue.test test/form.test test/routing.test
 
 all: warteraum hashtoken
 
-warteraum: emitjson.o queue.o routing.o form.o main.o
+warteraum: emitjson.o queue.o routing.o form.o auth.o main.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 hashtoken: hashtoken.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 main.o: main.c queue.h routing.h form.h v1_static.h emitjson.h \
-	scrypt.h tokens.h http_string.h $(HTTPSERVER)
+	auth.h http_string.h $(HTTPSERVER)
 
 form.o: form.c http_string.h $(HTTPSERVER)
 
 routing.o: routing.c $(HTTPSERVER)
 
-hashtoken.o: hashtoken.c scrypt.h
+hashtoken.o: hashtoken.c auth.h
+
+auth.o: auth.h tokens.h http_string.h $(HTTPSERVER)
 
 install: all
 	install -Dm755 hashtoken -t $(BINDIR)

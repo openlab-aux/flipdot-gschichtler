@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include "scrypt.h"
+#include "auth.h"
 
 int main(int argc, char **argv) {
   if(argc != 2) {

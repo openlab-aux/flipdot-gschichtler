@@ -14,10 +14,9 @@
 #include "queue.h"
 #include "routing.h"
 #include "form.h"
-#include "scrypt.h"
+#include "auth.h"
 
 #include "v1_static.h" /* static strings for v1 api */
-#include "tokens.h"    /* valid api tokens */
 
 #define LISTEN_PORT    9000   /* port to listen on          */
 #define MAX_BODY_LEN   8192   /* max body size we'll parse  */
@@ -76,30 +75,6 @@ void trim_whitespace(struct http_string_s *s) {
     s->len = new_len;
     s->buf = str + new_start;
   }
-}
-
-// authentication
-
-bool authenticate(http_string_t token) {
-  uint8_t hashed[SCRYPT_OUTPUT_LEN];
-
-  int hash_result = HASH_TOKEN(token.buf, token.len, hashed);
-
-  if(hash_result != 0) {
-    return false;
-  }
-
-  bool token_matches = false;
-  size_t token_count = sizeof(tokens) / (sizeof(uint8_t) * SCRYPT_OUTPUT_LEN);
-
-  for(size_t i = 0; i < token_count && !token_matches; i++) {
-    token_matches = true;
-    for(size_t j = 0; j < SCRYPT_OUTPUT_LEN && token_matches; j++) {
-      token_matches = tokens[i][j] == hashed[j];
-    }
-  }
-
-  return token_matches;
 }
 
 // main routing logic
@@ -360,7 +335,7 @@ enum warteraum_result response_queue_del(http_string_t id_str, enum warteraum_ve
   }
 
   errno = 0;
-  bool token_matches = authenticate(token);
+  bool token_matches = auth_verify(token);
 
   if(errno != 0) {
     // scrypt failed

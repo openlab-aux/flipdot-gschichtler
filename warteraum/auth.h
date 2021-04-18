@@ -1,8 +1,11 @@
-#ifndef WARTERAUM_SCRYPT_H
-#define WARTERAUM_SCRYPT_H
+#ifndef WARTERAUM_AUTH_H
+#define WARTERAUM_AUTH_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <scrypt-kdf.h>
+
+#include "../third_party/httpserver.h/httpserver.h"
 
 #define SCRYPT_OUTPUT_LEN 32
 
@@ -11,7 +14,7 @@
 #define SCRYPT_p 1
 
 // FIXME change for production
-const uint8_t salt[] = {
+static const uint8_t salt[] = {
   0x56, 0x02, 0xe9, 0xda, 0x68, 0x60, 0xfb, 0x20, 0xde, 0xa2, 0x6c, 0x9d, 0x68, 0xb4, 0x48, 0x28,
   0x42, 0x83, 0x38, 0xff, 0x5b, 0x5a, 0xb3, 0x87, 0x90, 0x8d, 0xff, 0xb5, 0x7e, 0x3c, 0x37, 0x2b,
   0x9b, 0x40, 0x18, 0x70, 0x94, 0x18, 0x86, 0x91, 0x9d, 0xa9, 0xda, 0x2e, 0x36, 0xdc, 0xd3, 0x56,
@@ -21,5 +24,7 @@ const uint8_t salt[] = {
 #define HASH_TOKEN(token, size, output)                         \
   scrypt_kdf((const uint8_t *) token, size, salt, sizeof(salt), \
              SCRYPT_N, SCRYPT_r, SCRYPT_p, output, SCRYPT_OUTPUT_LEN)
+
+bool auth_verify(struct http_string_s token);
 
 #endif
