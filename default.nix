@@ -1,7 +1,4 @@
-{ pkgs ? (import ./nix/nixpkgs-pinned.nix { })
-, scryptSalt ? null
-, apiTokens ? null
-}:
+{ pkgs ? (import ./nix/nixpkgs-pinned.nix { }) }:
 
 let
   gi = pkgs.nix-gitignore;
@@ -22,13 +19,13 @@ in
 rec {
   warteraum-static = pkgs.pkgsStatic.callPackage ./nix/warteraum.nix {
     inherit (pkgs.pkgsStatic.llvmPackages) stdenv;
-    inherit scryptSalt apiTokens rootSrc sourceName;
+    inherit rootSrc sourceName;
     inherit (python3.pkgs) pytest pytest-randomly requests flipdot-gschichtler;
   };
 
   warteraum = pkgs.callPackage ./nix/warteraum.nix {
     inherit (pkgs.llvmPackages_latest) stdenv;
-    inherit scryptSalt apiTokens rootSrc sourceName;
+    inherit rootSrc sourceName;
     inherit (python3.pkgs) pytest pytest-randomly requests flipdot-gschichtler;
   };
 

@@ -4,7 +4,16 @@ set -e
 cd "$(dirname "$0")"
 
 if command -v pytest > /dev/null; then
-  rm -f valgrind-log.txt
+  export WARTERAUM_SALT_FILE=./salt.tmp
+  export WARTERAUM_TOKENS_FILE=./tokens.tmp
+
+  rm -f valgrind-log.txt "$WARTERAUM_SALT_FILE" "$WARTERAUM_TOKENS_FILE"
+
+  head -c 100 /dev/urandom > "$WARTERAUM_SALT_FILE"
+
+  ../hashtoken "$WARTERAUM_SALT_FILE" random  > "$WARTERAUM_TOKENS_FILE"
+  ../hashtoken "$WARTERAUM_SALT_FILE" hannes >> "$WARTERAUM_TOKENS_FILE"
+  ../hashtoken "$WARTERAUM_SALT_FILE" lol123 >> "$WARTERAUM_TOKENS_FILE"
 
   valgrind \
     --log-file=./valgrind-log.txt \
@@ -17,7 +26,7 @@ if command -v pytest > /dev/null; then
 
   sleep 3
 
-  pytest ./test_integration.py
+  pytest -v ./test_integration.py
 
   kill $pid
 

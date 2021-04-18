@@ -5,9 +5,6 @@ import sys
 
 BASE_URL = 'http://localhost:9000'
 TOKEN = 'hannes'
-
-# technically somebody could use these tokens,
-# but tbh they deserve this test to fail then
 WRONG_TOKENS = [ 'password', 'admin', '12345678' ]
 
 MAX_TEXT_LEN = 512
@@ -37,11 +34,6 @@ def test_queue_del_format():
     my_id = api.add('test_queue_del_format')
 
     r = requests.delete('{}/api/v2/queue/{}'.format(BASE_URL, my_id), data = { 'token' : TOKEN })
-
-    # accept unauthorized (we can't know the token if a custom one was set
-    # via the nix derivation arguments)
-    if r.status_code == 401:
-        pytest.xfail('invalid API token is configured')
 
     assert r.status_code == 204
 
