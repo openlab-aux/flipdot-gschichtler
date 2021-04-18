@@ -21,8 +21,8 @@ let
     in builtins.substring 1 (builtins.stringLength commas) commas;
 
   saltReplace = lib.optionalString (scryptSalt != null) ''
-    sed -i '/^  0x/d' scrypt.h
-    sed -i '/const uint8_t salt/a\${saltArray}' scrypt.h
+    sed -i '/^  0x/d' auth.h
+    sed -i '/const uint8_t salt/a\${saltArray}' auth.h
   '';
 
   tokensReplace = lib.optionalString (apiTokens != null) ''
