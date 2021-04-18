@@ -27,7 +27,7 @@ rec {
   };
 
   warteraum = pkgs.callPackage ./nix/warteraum.nix {
-    stdenv = pkgs.clangStdenv;
+    inherit (pkgs.llvmPackages_latest) stdenv;
     inherit scryptSalt apiTokens rootSrc sourceName;
     inherit (python3.pkgs) pytest pytest-randomly requests flipdot-gschichtler;
   };
