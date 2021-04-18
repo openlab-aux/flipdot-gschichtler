@@ -43,6 +43,8 @@ void cleanup(int signum) {
   if(signum == SIGTERM || signum == SIGINT) {
     queue_free(flip_queue);
     free(server);
+    auth_cleanup();
+
     exit(EXIT_SUCCESS);
   }
 }
@@ -446,6 +448,10 @@ void handle_request(http_request_t *request) {
 
 int main(void) {
   queue_new(&flip_queue);
+
+  if(!auth_init()) {
+    fputs("Warning: Couldn't setup auth, won't accept any credentials\n", stderr);
+  }
 
   signal(SIGTERM, cleanup);
   signal(SIGINT, cleanup);

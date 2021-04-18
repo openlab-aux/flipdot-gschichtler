@@ -271,12 +271,8 @@ ready to be installed:
 * `bahnhofshalle`
 * `anzeigetafel`
 
-The warteraum attributes can be overriden to set the following
-values:
-
-* `apiTokens`: A list of api tokens to allow to authenticate with
-* `scryptSalt`: A string of hexadecimal digits which make up the
-  salt to use when hashing api tokens.
+Configuration
+~~~~~~~~~~~~~
 
 `nixos/flipdot-gschichtler.nix` provides a NixOS module which
 defines `services.flipdot-gschichtler` to conveniently set up
@@ -302,8 +298,8 @@ in {
   services.flipdot-gschichtler = {
     enable = true;
     virtualHost = "flipdot.openlab-augsburg.de";
-    apiTokens = [ ... ];
-    salt = "...";
+    tokensFile = "/var/secrets/flipdot-gschichtler/tokens";
+    saltFile = "/var/secrets/flipdot-gschichtler/salt";
   };
 
   services.nginx.enable = true;
@@ -313,8 +309,44 @@ in {
 }
 ---------------
 
+warteraum
+^^^^^^^^^
+
+`warteraum` is configured via environment variables (which the NixOS
+module utilizes):
+
+* `WARTERAUM_SALT_FILE`: A file containing random data to use as salt
+* `WARTERAUM_TOKENS_FILE`: API tokens hashed using `scrypt`
+
+To generate the tokens file, `warteraum` ships a utility tool.
+Setting up auth works like this:
+
+-------------------
+$ head -c 512 /dev/urandom > $WARTERAUM_SALT_FILE
+$ hashtoken $WARTERAUM_SALT_FILE token1 >> $WARTERAUM_TOKENS_FILE
+$ hashtoken $WARTERAUM_SALT_FILE token2 >> $WARTERAUM_TOKENS_FILE
+-------------------
+
+Now `warteraum` would accept “token1” and “token2” when authenticating.
+Note that `hashtoken` only supports appending tokens in a
+convenient fashion at the moment. Removing tokens is quite cumbersome
+and only possible with a knowledge of `warteraum` internals.
+
 Changelog
 ---------
+
+2.1.0 (WIP)
+~~~~~~~~~~~
+
+* `warteraum`
+** Limit size of request bodies to prevent DoS attacks
+** Trim whitespace on input text
+** Instead of compiling in salt and tokens, read them from the
+   files specified via the `WARTERAUM_SALT_FILE` and
+   `WARTERAUM_TOKENS_FILE` environment variables. In the NixOS
+   service this is reflected by the usage of `saltFile` and
+   `tokensFile` respectively over the previous `salt` and
+   `tokens`.
 
 2.0.0
 ~~~~~

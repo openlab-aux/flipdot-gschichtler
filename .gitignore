@@ -5,6 +5,7 @@ vgcore.*
 /warteraum/warteraum
 /warteraum/hashtoken
 /warteraum/test/*.test
+/warteraum/test/*.tmp
 /warteraum/test/valgrind-log.txt
 
 /bahnhofshalle/node_modules

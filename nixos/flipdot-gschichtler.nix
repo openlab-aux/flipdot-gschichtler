@@ -4,11 +4,10 @@ with lib;
 
 let
   cfg = config.services.flipdot-gschichtler;
-  fg  = flipdot-gschichtler;
-  withTokens = fg.warteraum-static.override {
-    inherit (cfg) apiTokens;
-    scryptSalt = cfg.salt;
-  };
+  inherit (flipdot-gschichtler)
+    bahnhofshalle
+    warteraum-static
+    ;
 in {
   options = {
     services.flipdot-gschichtler = {
@@ -23,21 +22,23 @@ in {
         '';
       };
 
-      salt = mkOption {
+      saltFile = mkOption {
         type = types.str;
         description = ''
-          Salt to use for hashing API tokens using scrypt_kdf(3).
-          Must be a string of hexadecimals which has a multiple of
-          2 as a length.
+          File of random data to use as salt for storing
+          API tokens. Using a path here will copy secrets
+          into the nix store!
         '';
       };
 
-      apiTokens = mkOption {
-        type = types.listOf types.str;
-        default = [];
+      tokensFile = mkOption {
+        type = types.path;
         description = ''
-          List of API tokens to allow access.
-          May be strings of any length.
+          File containing authorized API tokens which
+          can be created using
+          <literal>''${warteraum}/bin/hashtoken</literal>.
+          Using a path here will copy secrets into the
+          nix store!
         '';
       };
     };
@@ -49,12 +50,17 @@ in {
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
 
+      environment = {
+        WARTERAUM_SALT_FILE = cfg.saltFile;
+        WARTERAUM_TOKENS_FILE = cfg.tokensFile;
+      };
+
       serviceConfig = {
         Type = "simple";
-        ExecStart = "${withTokens}/bin/warteraum";
+        ExecStart = "${warteraum-static}/bin/warteraum";
         InAccessibleDirectories = "/";
         # mmap and munmap are used by libscrypt-kdf
-        SystemCallFilter = "@default @basic-io @io-event @network-io fcntl @signal @process @timer brk mmap munmap";
+        SystemCallFilter = "@default @basic-io @io-event @network-io fcntl @signal @process @timer brk mmap munmap open";
         SystemCallArchitectures = "native";
         CapabilityBoundingSet = "";
 
@@ -81,7 +87,7 @@ in {
     services.nginx.virtualHosts."${cfg.virtualHost}" = {
       enableACME = true;
       forceSSL = true;
-      root = fg.bahnhofshalle;
+      root = bahnhofshalle;
       extraConfig = ''
         location /api {
           proxy_pass http://127.0.0.1:9000/api;
