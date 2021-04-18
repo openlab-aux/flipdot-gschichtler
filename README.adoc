@@ -220,17 +220,13 @@ warteraum
 Requirements:
 
 * a C99 compiler
-* `redo` (https://github.com/leahneukirchen/redo-c[redo-c] and
-  http://news.dieweltistgarnichtso.net/bin/redo-sh.html[redo-sh]
-  are known to work)
+* GNU make
 * https://www.tarsnap.com/scrypt.html[`libscrypt-kdf`]
 
 ------------------------
 cd warteraum
-redo all
+make
 ------------------------
-
-Build settings can be tweaked in `warteraum/build_config`.
 
 bahnhofshalle
 ~~~~~~~~~~~~~
