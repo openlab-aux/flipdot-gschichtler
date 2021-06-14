@@ -32,35 +32,32 @@ rec {
     inherit (python3.pkgs) pytest pytest-randomly requests flipdot-gschichtler;
   };
 
-  bahnhofshalle =
-    let
-      nodePackages = import ./bahnhofshalle/node2nix { inherit pkgs; inherit (pkgs) nodejs; };
-      nodeDeps = nodePackages.shell.nodeDependencies;
-    in pkgs.stdenv.mkDerivation {
-      pname = "bahnhofshalle";
-      inherit version;
+  bahnhofshalle = pkgs.stdenv.mkDerivation {
+    pname = "bahnhofshalle";
+    inherit version;
 
-      src = rootSrc + "/bahnhofshalle";
+    src = rootSrc + "/bahnhofshalle";
 
-      buildInputs = [ pkgs.nodejs ];
+    buildInputs = [ pkgs.nodePackages.parcel-bundler ];
 
-      buildPhase = ''
-        export PARCEL_WORKERS=$NIX_BUILD_CORES
-        ln -s ${nodeDeps}/lib/node_modules ./node_modules
-        export PATH="${nodeDeps}/bin:$PATH"
+    buildPhase = ''
+      # inform parcel builder about our job count preferences
+      export PARCEL_WORKERS=$NIX_BUILD_CORES
+      # parcel won't find its dependencies unless they are in the current directory
+      ln -s "${pkgs.nodePackages.parcel-bundler}/lib/node_modules/parcel-bundler/node_modules" ./node_modules
 
-        parcel build index.html --out-dir="dist" --no-source-maps
+      parcel build index.html --out-dir="dist" --no-source-maps
 
-        # fail if parcel doesn't produce an output
-        if [[ "$(find dist | wc -l)" -le 1 ]]; then
-          exit 1
-        fi
-      '';
+      # fail if parcel doesn't produce an output
+      if [[ "$(find dist | wc -l)" -le 1 ]]; then
+        exit 1
+      fi
+    '';
 
-      installPhase = ''
-        cp -r dist $out
-      '';
-    };
+    installPhase = ''
+      cp -r dist $out
+    '';
+  };
 
   anzeigetafel =
     let
