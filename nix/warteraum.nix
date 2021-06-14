@@ -28,6 +28,7 @@ let
   tokensReplace = lib.optionalString (apiTokens != null) ''
     sed -i '/^  {/d' tokens.h
     sed -i '/^};/d' tokens.h
+    make hashtoken
     ${lib.concatMapStringsSep "\n"
         (x: "./hashtoken ${x} >> tokens.h; echo -n ', ' >> tokens.h") apiTokens}
     echo "};" >> tokens.h
