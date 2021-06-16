@@ -8,6 +8,8 @@ let
     bahnhofshalle
     warteraum-static
     ;
+
+  userGroupName = "warteraum";
 in {
   options = {
     services.flipdot-gschichtler = {
@@ -58,21 +60,26 @@ in {
       serviceConfig = {
         Type = "simple";
         ExecStart = "${warteraum-static}/bin/warteraum";
-        InAccessibleDirectories = "/";
+
+        # make only /nix/store and the salt and token file accessible
+        TemporaryFileSystem = "/:ro";
+        BindReadOnlyPaths = "/nix/store " + (lib.concatStringsSep " " [
+          cfg.saltFile
+          cfg.tokensFile
+        ]);
+        # TemporaryFileSystem doesn't work with DynamicUser
+        User = userGroupName;
+        Group = userGroupName;
+
         # mmap and munmap are used by libscrypt-kdf
         SystemCallFilter = "@default @basic-io @io-event @network-io fcntl @signal @process @timer brk mmap munmap open";
         SystemCallArchitectures = "native";
-        CapabilityBoundingSet = "";
 
+        CapabilityBoundingSet = "";
         NoNewPrivileges = true;
         RestrictRealtime = true;
         LockPersonality = true;
 
-        DynamicUser = true;
-
-        ProtectSystem = "strict";
-        ProtectHome = true;
-        PrivateTmp = true;
         PrivateUsers = true;
         ProtectKernelTunables = true;
         ProtectKernelModules = true;
@@ -81,6 +88,9 @@ in {
         MemoryDenyWriteExecute = true;
         PrivateDevices = true;
         PrivateMounts = true;
+
+        StandardError = "journal";
+        StandardOutput = "journal";
       };
     };
 
@@ -93,6 +103,14 @@ in {
           proxy_pass http://127.0.0.1:9000/api;
         }
       '';
+    };
+
+    users = {
+      users."${userGroupName}"= {
+        isSystemUser = true;
+        group = userGroupName;
+      };
+      groups."${userGroupName}"= {};
     };
   };
 }

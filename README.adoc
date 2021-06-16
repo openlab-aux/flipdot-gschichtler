@@ -347,6 +347,9 @@ Changelog
    service this is reflected by the usage of `saltFile` and
    `tokensFile` respectively over the previous `salt` and
    `tokens`.
+** Fix sandboxing in `nixos/flipdot-gschichtler.nix`: Now only
+  the secret files and the nix store will be readable to the
+  `warteraum` process.
 
 2.0.0
 ~~~~~
