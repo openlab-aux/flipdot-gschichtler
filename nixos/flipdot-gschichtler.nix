@@ -72,7 +72,22 @@ in {
         Group = userGroupName;
 
         # mmap and munmap are used by libscrypt-kdf
-        SystemCallFilter = "@default @basic-io @io-event @network-io fcntl @signal @process @timer brk mmap munmap open";
+        SystemCallFilter = lib.concatStringsSep " " [
+          "@default"
+          "@basic-io"
+          "@io-event"
+          "@network-io"
+          "fcntl"
+          "@signal"
+          "@process"
+          "@timer"
+          "brk"
+          "mmap" "munmap" "mprotect"
+          "open" "openat"
+          "close"
+          "fstat" "stat"
+          "access"
+          ];
         SystemCallArchitectures = "native";
 
         CapabilityBoundingSet = "";
