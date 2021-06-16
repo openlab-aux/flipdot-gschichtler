@@ -283,23 +283,21 @@ it could look like this:
 ---------------
 { pkgs, ... }:
 
-let
-  flipdot-gschichtler = import /path/to/flipdot-gschichtler {
-    inherit pkgs;
-  };
-
-in {
+{
   imports = [
     /path/to/flipdot-gschichtler/nixos/flipdot-gschichtler.nix
   ];
-
-  _module.args = { inherit flipdot-gschichtler; };
 
   services.flipdot-gschichtler = {
     enable = true;
     virtualHost = "flipdot.openlab-augsburg.de";
     tokensFile = "/var/secrets/flipdot-gschichtler/tokens";
     saltFile = "/var/secrets/flipdot-gschichtler/salt";
+    # if you want to change the derivations to use
+    # packages = {
+    #   warteraum = …;
+    #   bahnhofshalle = …;
+    # };
   };
 
   services.nginx.enable = true;
@@ -343,13 +341,19 @@ Changelog
 ** Trim whitespace on input text
 ** Instead of compiling in salt and tokens, read them from the
    files specified via the `WARTERAUM_SALT_FILE` and
-   `WARTERAUM_TOKENS_FILE` environment variables. In the NixOS
-   service this is reflected by the usage of `saltFile` and
+   `WARTERAUM_TOKENS_FILE` environment variables.
+* NixOS module
+** Reflect change to `warteraum` by using `saltFile` and
    `tokensFile` respectively over the previous `salt` and
    `tokens`.
 ** Fix sandboxing in `nixos/flipdot-gschichtler.nix`: Now only
-  the secret files and the nix store will be readable to the
-  `warteraum` process.
+   the secret files and the nix store will be readable to the
+   `warteraum` process.
+** Allow changing `bahnhofshalle` and `warteraum` derivation
+   to use via `packages`.
+** Don't require `flipdot-gschichtler` to be passed as module
+   argument, instead import directly from file system (unless
+   a non-default derivation is configured).
 
 2.0.0
 ~~~~~

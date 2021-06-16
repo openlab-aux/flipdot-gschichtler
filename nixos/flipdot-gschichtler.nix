@@ -1,19 +1,39 @@
-{ config, lib, pkgs, flipdot-gschichtler, ... }:
+{ config, lib, pkgs, ... }:
 
 with lib;
 
 let
   cfg = config.services.flipdot-gschichtler;
-  inherit (flipdot-gschichtler)
-    bahnhofshalle
-    warteraum-static
-    ;
+
+  flipdot-gschichtler = import ../. {
+    inherit pkgs;
+  };
+  importClause = "(import ../. { inherit pkgs; })";
 
   userGroupName = "warteraum";
 in {
   options = {
     services.flipdot-gschichtler = {
       enable = mkEnableOption "flipdot-gschichtler";
+
+      packages = {
+        warteraum = mkOption {
+          type = types.package;
+          default = flipdot-gschichtler.warteraum;
+          defaultText = literalExample "${importClause}.warteraum";
+          description = ''
+            <literal>warteraum</literal> derivation to use.
+          '';
+        };
+        bahnhofshalle = mkOption {
+          type = types.package;
+          default = flipdot-gschichtler.bahnhofshalle;
+          defaultText = literalExample "${importClause}.bahnhofshalle";
+          description = ''
+            <literal>bahnhofshalle</literal> derivation to use.
+          '';
+        };
+      };
 
       virtualHost = mkOption {
         type = types.str;
@@ -59,7 +79,7 @@ in {
 
       serviceConfig = {
         Type = "simple";
-        ExecStart = "${warteraum-static}/bin/warteraum";
+        ExecStart = "${cfg.packages.warteraum}/bin/warteraum";
 
         # make only /nix/store and the salt and token file accessible
         TemporaryFileSystem = "/:ro";
@@ -112,7 +132,7 @@ in {
     services.nginx.virtualHosts."${cfg.virtualHost}" = {
       enableACME = true;
       forceSSL = true;
-      root = bahnhofshalle;
+      root = cfg.packages.bahnhofshalle;
       extraConfig = ''
         location /api {
           proxy_pass http://127.0.0.1:9000/api;
