@@ -307,7 +307,7 @@ enum warteraum_result response_queue_add(enum warteraum_version version, http_re
 }
 
 // DELETE /api/v1/queue/del/<id>
-// DELTE /api/v2/queue/<id>
+// DELETE /api/v2/queue/<id>
 enum warteraum_result response_queue_del(http_string_t id_str, enum warteraum_version v, http_request_t *request, http_response_t *response) {
   (void) v; // surpress warning for now
 
