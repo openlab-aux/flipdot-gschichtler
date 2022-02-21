@@ -90,7 +90,7 @@ in {
 
         # make sure only /nix/store is accessible
         TemporaryFileSystem = "/:ro";
-        BindReadOnlyPaths = "/nix/store";
+        BindReadOnlyPaths = "${builtins.storeDir}";
         # TemporaryFileSystem doesn't work with DynamicUser
         User = userGroupName;
         Group = userGroupName;
