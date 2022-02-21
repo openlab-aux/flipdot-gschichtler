@@ -72,21 +72,25 @@ in {
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
 
-      environment = {
-        WARTERAUM_SALT_FILE = cfg.saltFile;
-        WARTERAUM_TOKENS_FILE = cfg.tokensFile;
-      };
-
       serviceConfig = {
         Type = "simple";
-        ExecStart = "${cfg.packages.warteraum}/bin/warteraum";
 
-        # make only /nix/store and the salt and token file accessible
+        ExecStart = lib.concatStringsSep " " [
+          # See https://github.com/systemd/systemd/issues/22549
+          "${pkgs.coreutils}/bin/env"
+          "WARTERAUM_SALT_FILE=\${CREDENTIALS_DIRECTORY}/salt"
+          "WARTERAUM_TOKENS_FILE=\${CREDENTIALS_DIRECTORY}/tokens"
+          "${cfg.packages.warteraum}/bin/warteraum"
+        ];
+
+        LoadCredential = [
+          "salt:${cfg.saltFile}"
+          "tokens:${cfg.tokensFile}"
+        ];
+
+        # make sure only /nix/store is accessible
         TemporaryFileSystem = "/:ro";
-        BindReadOnlyPaths = "/nix/store " + (lib.concatStringsSep " " [
-          cfg.saltFile
-          cfg.tokensFile
-        ]);
+        BindReadOnlyPaths = "/nix/store";
         # TemporaryFileSystem doesn't work with DynamicUser
         User = userGroupName;
         Group = userGroupName;
