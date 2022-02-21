@@ -103,11 +103,8 @@ in {
           "@timer"
           "brk"
           "mmap" "munmap" "mprotect"
-          "open" "openat"
-          "close"
-          "fstat" "stat"
-          "access"
-          ];
+          "@file-system"
+        ];
         SystemCallArchitectures = "native";
 
         CapabilityBoundingSet = "";
