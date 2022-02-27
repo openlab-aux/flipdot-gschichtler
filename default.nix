@@ -80,4 +80,6 @@ rec {
       };
     };
   };
+
+  nixosModule = ./nixos/flipdot-gschichtler.nix;
 }
