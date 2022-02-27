@@ -36,6 +36,11 @@ a:visited, a:link {
   color: #0088aa; /* openlab blue */
 }
 
+h3:target {
+  /* highlight a FAQ heading when selected via a link */
+  text-decoration: underline;
+}
+
 .table-container {
   max-width: 100%;
   overflow: auto;

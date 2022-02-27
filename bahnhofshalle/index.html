@@ -62,7 +62,7 @@
       <section id="faq">
         <h2>faq</h2>
 
-        <h3>What the hell is this?</h3>
+        <h3 id="faq-about">What the hell is this?</h3>
 
         <p>
           flipdot-gschichtler is a set of network applications which allow
@@ -79,7 +79,7 @@
           annoy everyone who is present from the comfort of your own home.
         </p>
 
-        <h3>How does it work?</h3>
+        <h3 id="faq-architecture">How does it work?</h3>
 
         <p>
           This server provides a REST API which manages a queue of strings
@@ -96,7 +96,7 @@
           script to display the strings from the queue.
         </p>
 
-        <h3>Where's the source code?</h3>
+        <h3 id="faq-source">Where's the source code?</h3>
         <p>
           Hosted on GitHub:
           <a href="https://github.com/openlab-aux/flipdot-gschichtler">
@@ -104,7 +104,7 @@
           </a>
         </p>
 
-        <h3>How do I use the API?</h3>
+        <h3 id="faq-api-doc">How do I use the API?</h3>
 
         <p>
           Long story short: <code>/api/v2/queue</code>
@@ -120,16 +120,25 @@
           <a href="https://github.com/openlab-aux/flipdot-gschichtler#api-documentation">API documentation</a>.
         </p>
 
-        <h3>Can I get an API token?</h3>
+        <h3 id="faq-api-token">Can I get an API token?</h3>
 
         <p>
           Authentication is only necessary to delete queue entries,
           so chances are you don't need one. If you need one regardless,
           ask
           <a href="https://wiki.openlab-augsburg.de/Mensch_sternenseemann">
-            sterni
+            sternenseemann
           </a>.
         </p>
+
+        <h3 id="faq-requirements">Why isn't this working for me?</h3>
+
+        <p>
+          This site uses JavaScript, more specifically
+          <a href="https://caniuse.com/es6">EcmaScript2015</a>.
+          If you're browser doesn't support this, you should either upgrade to a
+          modern one or
+          <a href="#faq-api-doc">interact with the API directly</a>.
       </section>
     </main>
   </body>
