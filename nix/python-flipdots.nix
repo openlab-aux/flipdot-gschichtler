@@ -1,12 +1,12 @@
 { buildPythonPackage, pillow, numpy, flask
-, rootSrc
+, getSrc
 }:
 
 buildPythonPackage {
   name = "flipdots";
   version = "unstable";
 
-  src = rootSrc + "/third_party/flipdots";
+  src = getSrc "third_party/flipdots";
 
   propagatedBuildInputs = [ flask pillow numpy ];
 

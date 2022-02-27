@@ -1,15 +1,18 @@
 { stdenv, lib, scrypt
 , jq, requests, pytest, pytest-randomly, flipdot-gschichtler, valgrind
-, rootSrc, sourceName
+, getSrc
 }:
 
 stdenv.mkDerivation rec {
   pname = "warteraum";
   version = import ./version.nix;
 
-  sourceRoot = sourceName + "/warteraum";
+  src = [
+    (getSrc "warteraum")
+    (getSrc "third_party")
+  ];
 
-  src = rootSrc;
+  sourceRoot = "warteraum";
 
   makeFlags = [
     "PREFIX=${placeholder "out"}"

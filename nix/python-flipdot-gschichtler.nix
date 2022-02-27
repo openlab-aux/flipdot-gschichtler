@@ -1,12 +1,12 @@
 { buildPythonPackage, requests
-, rootSrc
+, getSrc
 }:
 
 buildPythonPackage rec {
   pname = "flipdot-gschichtler";
   version = import ./version.nix;
 
-  src = rootSrc + "/clients/py";
+  src = getSrc "clients/py";
 
   doCheck = false;
 

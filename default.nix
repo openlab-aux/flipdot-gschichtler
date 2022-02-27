@@ -6,11 +6,10 @@ let
 
   version = import ./nix/version.nix;
   root = ./.;
-  sourceName = "flipdot-gschichtler-source";
 
-  rootSrc = builtins.path {
-    path = root;
-    name = sourceName;
+  getSrc = name: builtins.path {
+    name = builtins.baseNameOf name;
+    path = root + "/${name}";
     filter = gi.gitignoreFilter (builtins.readFile ./.gitignore) root;
   };
 
@@ -19,13 +18,13 @@ in
 rec {
   warteraum-static = pkgs.pkgsStatic.callPackage ./nix/warteraum.nix {
     inherit (pkgs.pkgsStatic.llvmPackages) stdenv;
-    inherit rootSrc sourceName;
+    inherit getSrc;
     inherit (python3.pkgs) pytest pytest-randomly requests flipdot-gschichtler;
   };
 
   warteraum = pkgs.callPackage ./nix/warteraum.nix {
     inherit (pkgs.llvmPackages_latest) stdenv;
-    inherit rootSrc sourceName;
+    inherit getSrc;
     inherit (python3.pkgs) pytest pytest-randomly requests flipdot-gschichtler;
   };
 
@@ -33,7 +32,7 @@ rec {
     pname = "bahnhofshalle";
     inherit version;
 
-    src = rootSrc + "/bahnhofshalle";
+    src = getSrc "bahnhofshalle";
 
     nativeBuildInputs = [
       pkgs.buildPackages.esbuild
@@ -53,7 +52,7 @@ rec {
           pname = "anzeigetafel";
           inherit version;
 
-          src = rootSrc + "/anzeigetafel";
+          src = getSrc "anzeigetafel";
 
           propagatedBuildInputs = [ flipdots flipdot-gschichtler ];
 
@@ -73,11 +72,11 @@ rec {
   python3 = pkgs.python3.override {
     packageOverrides = self: super: {
       flipdots = self.callPackage ./nix/python-flipdots.nix {
-        inherit rootSrc;
+        inherit getSrc;
       };
 
       flipdot-gschichtler = self.callPackage ./nix/python-flipdot-gschichtler.nix {
-        inherit rootSrc;
+        inherit getSrc;
       };
     };
   };
