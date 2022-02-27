@@ -1,3 +1,4 @@
+// -*- mode: javascript -*-
 var token = null;
 
 function saveApiToken(e) {
