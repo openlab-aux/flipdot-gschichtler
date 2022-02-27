@@ -8,10 +8,8 @@ vgcore.*
 /warteraum/test/*.tmp
 /warteraum/test/valgrind-log.txt
 
-/bahnhofshalle/node_modules
-/bahnhofshalle/.cache
-/bahnhofshalle/yarn-error.log
 /bahnhofshalle/dist/
+/bahnhofshalle/*.js
 
 web/queue.db
 __pycache__/

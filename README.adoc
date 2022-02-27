@@ -231,14 +231,17 @@ make
 bahnhofshalle
 ~~~~~~~~~~~~~
 
-We need `parcel` and `babel`. It is probably easiest to
-either use the `bahnhofshalle` attribute of `default.nix` or `npm`
-or `yarn` to install the dependencies of `package.json` like this:
+To build `bahnhofshalle` you need GNU make and https://esbuild.github.io/[esbuild].
+One way to obtain both is to run `nix-shell -A bahnhofshalle` from the repository's
+root. To build, use the following commands:
 
 ------------------------
 cd bahnhofshalle
-yarn install
-yarn run build    # result in ./dist
+make
+firefox index.html # for local development where only js needs to be rebuilt
+
+make dist
+firefox dist/index.html # properly minified distribution
 ------------------------
 
 Note that all requests are sent using a `same-origin` policy,
@@ -354,6 +357,8 @@ Changelog
 ** Don't require `flipdot-gschichtler` to be passed as module
    argument, instead import directly from file system (unless
    a non-default derivation is configured).
+* `bahnhofshalle`
+** Switch to `esbuild`, requiring ES6 support in the browser as a result.
 
 2.0.0
 ~~~~~

@@ -35,25 +35,15 @@ rec {
 
     src = rootSrc + "/bahnhofshalle";
 
-    buildInputs = [ pkgs.nodePackages.parcel-bundler ];
+    nativeBuildInputs = [
+      pkgs.buildPackages.esbuild
+    ];
 
-    buildPhase = ''
-      # inform parcel builder about our job count preferences
-      export PARCEL_WORKERS=$NIX_BUILD_CORES
-      # parcel won't find its dependencies unless they are in the current directory
-      ln -s "${pkgs.nodePackages.parcel-bundler}/lib/node_modules/parcel-bundler/node_modules" ./node_modules
+    makeFlags = [
+      "DIST=$(out)"
+    ];
 
-      parcel build index.html --out-dir="dist" --no-source-maps
-
-      # fail if parcel doesn't produce an output
-      if [[ "$(find dist | wc -l)" -le 1 ]]; then
-        exit 1
-      fi
-    '';
-
-    installPhase = ''
-      cp -r dist $out
-    '';
+    installTargets = [ "dist" ];
   };
 
   anzeigetafel =
