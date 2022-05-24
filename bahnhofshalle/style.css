@@ -12,8 +12,7 @@ header, main, footer {
 
 @media screen and (max-width: 800px) {
   header {
-    align-items: center;
-    justify-content: space-around;
+    justify-content: center;
   }
 }
 
@@ -22,14 +21,32 @@ header {
   border-bottom: 5px solid #e1e1e1;
   display: flex;
   flex-wrap: wrap;
-  height: 30px;
+  align-items: center;
+  justify-content: left;
 }
 
-header img,
-#heading h1 {
-  max-height: 30px;
-  margin: auto 5px;
-  font-size: 20px;
+header > * {
+  margin-right: 10px;
+}
+
+header > .fixed-height {
+  height: 2.5em;
+}
+
+header img {
+  max-height: 100%;
+}
+
+header > .heading {
+  min-height: 2.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+header h1 {
+  font-size: 1.5em;
+  margin: 0;
 }
 
 a:visited, a:link {
