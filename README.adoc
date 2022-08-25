@@ -20,7 +20,7 @@ Components
   connectivity to the flipdot panel. It monitors the queue of
   `warteraum` and displays new incoming text on the panel and
   deletes it from the queue afterwards.
-- `bahnhofshalle` is a web fronted which allows users to view and
+- `bahnhofshalle` is a web frontend which allows users to view and
   manipulate the queue of `warteraum` from their browser.
 
 API Documentation
