@@ -1,7 +1,7 @@
 let
-  # nixos unstable 2022-02-22
-  commit = "7f9b6e2babf232412682c09e57ed666d8f84ac2d";
-  sha256 = "03nb8sbzgc3c0qdr1jbsn852zi3qp74z4qcy7vrabvvly8rbixp2";
+  # nixos unstable 2025-01-16
+  commit = "5df43628fdf08d642be8ba5b3625a6c70731c19c";
+  sha256 = "05xhbk4yjbv0f760ld6q9z2v0nphakgk78kgd0wnnmzdjqqkbfad";
 in
 
 import (builtins.fetchTarball {

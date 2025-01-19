@@ -22,7 +22,7 @@ stdenv.mkDerivation rec {
     patchShebangs test/integration
   '';
 
-  doCheck = true;
+  doCheck = lib.meta.availableOn stdenv.hostPlatform valgrind;
   checkInputs = [
     jq valgrind pytest pytest-randomly requests flipdot-gschichtler
   ];

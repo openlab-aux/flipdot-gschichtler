@@ -17,7 +17,7 @@ in
 
 rec {
   warteraum-static = pkgs.pkgsStatic.callPackage ./nix/warteraum.nix {
-    inherit (pkgs.pkgsStatic.llvmPackages) stdenv;
+    # TODO: inherit (pkgs.pkgsStatic.llvmPackages) stdenv;
     inherit getSrc;
     inherit (python3.pkgs) pytest pytest-randomly requests flipdot-gschichtler;
   };
