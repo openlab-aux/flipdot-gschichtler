@@ -10,9 +10,9 @@ jobs:
   nix-build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2.4.0
-    - uses: cachix/install-nix-action@v16
-    - uses: cachix/cachix-action@v10
+    - uses: actions/checkout@v4.2.2
+    - uses: cachix/install-nix-action@v31.4.1
+    - uses: cachix/cachix-action@v16
       with:
         name: openlab-aux
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
