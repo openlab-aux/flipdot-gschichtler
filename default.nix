@@ -47,14 +47,17 @@ rec {
 
   anzeigetafel =
     let
-      drv = { buildPythonApplication, unifont, flipdots, flipdot-gschichtler }:
+      drv = { buildPythonApplication, unifont, setuptools, flipdots, flipdot-gschichtler }:
         buildPythonApplication {
           pname = "anzeigetafel";
           inherit version;
 
           src = getSrc "anzeigetafel";
 
-          propagatedBuildInputs = [ flipdots flipdot-gschichtler ];
+          pyproject = true;
+          build-system = [ setuptools ];
+
+          dependencies = [ flipdots flipdot-gschichtler ];
 
           doCheck = false;
 

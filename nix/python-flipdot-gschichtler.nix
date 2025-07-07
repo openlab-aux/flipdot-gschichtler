@@ -1,4 +1,4 @@
-{ buildPythonPackage, requests
+{ buildPythonPackage, setuptools, requests
 , getSrc
 }:
 
@@ -8,13 +8,16 @@ buildPythonPackage rec {
 
   src = getSrc "clients/py";
 
+  pyproject = true;
+  build-system = [ setuptools ];
+
   doCheck = false;
 
   postPatch = ''
     sed -i "s/version = '.*'/version = '${version}'/" setup.py
   '';
 
-  propagatedBuildInputs = [ requests ];
+  dependencies = [ requests ];
 
   pythonImportsCheck = [ "flipdot_gschichtler" ];
 

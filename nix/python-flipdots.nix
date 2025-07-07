@@ -1,4 +1,4 @@
-{ buildPythonPackage, pillow, numpy, flask
+{ buildPythonPackage, setuptools, pillow, numpy, flask
 , getSrc
 }:
 
@@ -8,7 +8,10 @@ buildPythonPackage {
 
   src = getSrc "third_party/flipdots";
 
-  propagatedBuildInputs = [ flask pillow numpy ];
+  pyproject = true;
+  build-system = [ setuptools ];
+
+  dependencies = [ flask pillow numpy ];
 
   doCheck = false;
 
