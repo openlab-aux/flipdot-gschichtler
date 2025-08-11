@@ -95,7 +95,7 @@ void response_error(enum warteraum_result e, http_request_t *request, http_respo
   // response_error should never be called with
   // WARTERAUM_OK, so this is considered a error 500
   const http_string_t errors[] = {
-    STATIC_HTTP_STRING("internal server error"),
+    STATIC_HTTP_STRING("error response was triggered unexpectedly"),
     STATIC_HTTP_STRING("bad request"),
     STATIC_HTTP_STRING("unauthorized"),
     STATIC_HTTP_STRING("endpoint not found"),
