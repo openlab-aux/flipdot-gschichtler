@@ -12,7 +12,7 @@ static struct http_string_s salt;
 // easily loop through them.
 static struct http_string_s tokens;
 
-bool auth_init() {
+bool auth_init(void) {
   http_string_clear(&salt);
   http_string_clear(&tokens);
 
@@ -41,7 +41,7 @@ bool auth_init() {
   }
 }
 
-void auth_cleanup() {
+void auth_cleanup(void) {
   http_string_free(&salt);
   http_string_free(&tokens);
 }
