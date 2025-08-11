@@ -18,8 +18,8 @@
              (const uint8_t *) salt.buf, salt.len,                      \
              SCRYPT_N, SCRYPT_r, SCRYPT_p, output, SCRYPT_OUTPUT_LEN)
 
-bool auth_init();
-void auth_cleanup();
+bool auth_init(void);
+void auth_cleanup(void);
 
 bool auth_verify(struct http_string_s token);
 
