@@ -1,7 +1,7 @@
 flipdot-gschichtler
 ===================
 sterni
-November 2020
+August 2025
 
 `flipdot-gschichtler` allows to display text on the OpenLab's
 flipdot panel in an user- and machine-friendly way without
@@ -336,8 +336,8 @@ and only possible with a knowledge of `warteraum` internals.
 Changelog
 ---------
 
-2.1.0 (WIP)
-~~~~~~~~~~~
+2.1.0
+~~~~~
 
 * `warteraum`
 ** Limit size of request bodies to prevent DoS attacks
@@ -359,6 +359,7 @@ Changelog
    a non-default derivation is configured).
 * `bahnhofshalle`
 ** Switch to `esbuild`, requiring ES6 support in the browser as a result.
+* `clients/py`: release Python client library for flipdot-gschichtler
 
 2.0.0
 ~~~~~
