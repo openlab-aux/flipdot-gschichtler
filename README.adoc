@@ -148,42 +148,7 @@ authenticate itself:
 API `v1`
 ~~~~~~~
 
-GET `/api/v1/queue`
-^^^^^^^^^^^^^^^^^^^
-
-Same as `/api/v2/queue`, since v2 didn't introduce any changes.
-
-POST `/api/v1/queue/add`
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-|=============================================
-| Request Content-Type  | `application/x-www-form-urlencoded`
-| Response Content-Type | `text/html`
-| Authentication        | no
-|=============================================
-
-This is the legacy endpoint to add text to the queue. It enabled
-interacting with it via a `<form>` in the old web app. The form
-sent as part of the request should have the following fields:
-
-|=============================================
-| `text` | text to be added to the queue
-|=============================================
-
-The response format has been changed since the previous implementation.
-I sincerly hope that nobody scraped the resulting page.
-
-|=============================================
-| HTTP Status  | Meaning
-| 200          | Success, text added
-| 400          | Illegal method or malformed request
-| 415          | Request body too big or text field longer allowed (usually 512 bytes)
-|=============================================
-
-DELETE `/api/v1/queue/del/<id>`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Same as `/api/v2/queue/<id>`, `v2` only changed the endpoint URL.
+Unsupported since version 2.2.0.
 
 Bug Bounty
 ----------
@@ -335,6 +300,12 @@ and only possible with a knowledge of `warteraum` internals.
 
 Changelog
 ---------
+
+2.2.0 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* `warteraum`
+** Remove support for the `v1` API completely.
 
 2.1.0
 ~~~~~

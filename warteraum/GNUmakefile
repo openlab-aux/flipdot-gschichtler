@@ -26,7 +26,7 @@ warteraum: http_string.o emitjson.o queue.o routing.o form.o auth.o main.o
 hashtoken: hashtoken.o http_string.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-main.o: main.c queue.h routing.h form.h v1_static.h emitjson.h \
+main.o: main.c queue.h routing.h form.h emitjson.h \
 	auth.h http_string.h $(HTTPSERVER)
 
 form.o: form.c http_string.h $(HTTPSERVER)
