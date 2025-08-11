@@ -16,8 +16,6 @@
 #include "form.h"
 #include "auth.h"
 
-#include "v1_static.h" /* static strings for v1 api */
-
 #define LISTEN_PORT    9000   /* port to listen on          */
 #define MAX_BODY_LEN   8192   /* max body size we'll parse  */
 #define MAX_TEXT_LEN   512    /* max length of a queue text */
@@ -89,15 +87,11 @@ enum warteraum_result {
   WARTERAUM_INTERNAL_ERROR = 4,
   WARTERAUM_FULL_ERROR = 5,
   WARTERAUM_ENTRY_NOT_FOUND = 6,
-  WARTERAUM_TOO_LONG = 7
+  WARTERAUM_TOO_LONG = 7,
+  WARTERAUM_UNSUPPORTED_API_VERSION = 8,
 };
 
-enum warteraum_version {
-  WARTERAUM_API_V1,
-  WARTERAUM_API_V2
-};
-
-void response_error(enum warteraum_result e, bool legacy_response, http_request_t *request, http_response_t *response) {
+void response_error(enum warteraum_result e, http_request_t *request, http_response_t *response) {
   // response_error should never be called with
   // WARTERAUM_OK, so this is considered a error 500
   const http_string_t errors[] = {
@@ -109,57 +103,46 @@ void response_error(enum warteraum_result e, bool legacy_response, http_request_
     STATIC_HTTP_STRING("queue is full (max id reached)"),
     STATIC_HTTP_STRING("queue entry not found"),
     STATIC_HTTP_STRING("body or other input too long"),
+    STATIC_HTTP_STRING("api version is no longer supported"),
   };
 
-  const int codes[] = { 500, 400, 401, 404, 500, 503, 404, 413 };
+  const int codes[] = { 500, 400, 401, 404, 500, 503, 404, 413, 410 };
 
-  if(legacy_response) {
-    // /api/v1/queue/add returns a HTML response
-    // we emulate this behavior, however not exactly
+  size_t buf_size = 0;
+  char *buf = NULL;
+  FILE *out = open_memstream(&buf, &buf_size);
+  struct ej_context ctx;
+  bool static_buf = false;
 
-    http_response_status(response, codes[e]);
-    http_response_header(response, "Content-Type", "text/html");
-    http_response_body(response, QUEUE_ADD_V1_FAILURE, sizeof(QUEUE_ADD_V1_FAILURE) - 1);
-    http_respond(request, response);
+  ej_init(&ctx, out);
+
+  if(out == NULL) {
+    buf = INTERNAL_ERROR_STATIC;
+    buf_size = sizeof(INTERNAL_ERROR_STATIC) - 1;
+
+    static_buf = true;
+    e = WARTERAUM_INTERNAL_ERROR;
   } else {
-    size_t buf_size = 0;
-    char *buf = NULL;
-    FILE *out = open_memstream(&buf, &buf_size);
-    struct ej_context ctx;
-    bool static_buf = false;
+    ej_object(&ctx);
+    EJ_STATIC_BIND(&ctx, "error");
+    ej_string(&ctx, errors[e].buf, (size_t) errors[e].len);
+    ej_object_end(&ctx);
 
-    ej_init(&ctx, out);
+    fclose(out);
+  }
 
-    if(out == NULL) {
-      buf = INTERNAL_ERROR_STATIC;
-      buf_size = sizeof(INTERNAL_ERROR_STATIC) - 1;
+  http_response_status(response, codes[e]);
+  http_response_header(response, "Content-Type", "application/json");
+  http_response_body(response, buf, static_buf ? buf_size : (int) ctx.written);
+  http_respond(request, response);
 
-      static_buf = true;
-      e = WARTERAUM_INTERNAL_ERROR;
-    } else {
-      ej_object(&ctx);
-      EJ_STATIC_BIND(&ctx, "error");
-      ej_string(&ctx, errors[e].buf, (size_t) errors[e].len);
-      ej_object_end(&ctx);
-
-      fclose(out);
-    }
-
-    http_response_status(response, codes[e]);
-    http_response_header(response, "Content-Type", "application/json");
-    http_response_body(response, buf, static_buf ? buf_size : (int) ctx.written);
-    http_respond(request, response);
-
-    if(!static_buf) {
-      free(buf);
-    }
+  if(!static_buf) {
+    free(buf);
   }
 }
 
-// GET /api/{v1, v2}/queue
-enum warteraum_result response_queue(enum warteraum_version v, http_request_t *request, http_response_t *response) {
-  (void) v; // surpress warning for now
-
+// GET /api/v2/queue
+enum warteraum_result response_queue(http_request_t *request, http_response_t *response) {
   unsigned int queue_length = 0;
 
   struct ej_context ctx;
@@ -208,8 +191,8 @@ enum warteraum_result response_queue(enum warteraum_version v, http_request_t *r
   return WARTERAUM_OK;
 }
 
-// POST /api/{v1,v2}/queue/add
-enum warteraum_result response_queue_add(enum warteraum_version version, http_request_t *request, http_response_t *response) {
+// POST /api/v2/queue/add
+enum warteraum_result response_queue_add(http_request_t *request, http_response_t *response) {
   http_string_t text;
   const struct form_field_spec request_spec[] = {
     { STATIC_HTTP_STRING("text"), FIELD_TYPE_STRING, &text }
@@ -269,48 +252,38 @@ enum warteraum_result response_queue_add(enum warteraum_version version, http_re
     return WARTERAUM_INTERNAL_ERROR;
   }
 
-  if(version == WARTERAUM_API_V1) {
-    http_response_status(response, 200);
-    http_response_header(response, "Content-Type", "text/html");
-    http_response_body(response, QUEUE_ADD_V1_SUCCESS, sizeof(QUEUE_ADD_V1_SUCCESS) - 1);
-    http_respond(request, response);
-  } else {
-    struct ej_context ctx;
-    char *buf = NULL;
-    size_t buf_size = 0;
-    FILE *out = open_memstream(&buf, &buf_size);
+  struct ej_context ctx;
+  char *buf = NULL;
+  size_t buf_size = 0;
+  FILE *out = open_memstream(&buf, &buf_size);
 
-    if(out == NULL) {
-      return WARTERAUM_INTERNAL_ERROR;
-    }
-
-    ej_init(&ctx, out);
-
-    ej_object(&ctx);
-    EJ_STATIC_BIND(&ctx, "id");
-    ej_uint(&ctx, flip_queue.last->id);
-    EJ_STATIC_BIND(&ctx, "text");
-    ej_string(&ctx, flip_queue.last->string, flip_queue.last->string_size);
-    ej_object_end(&ctx);
-
-    fclose(out);
-
-    http_response_status(response, 200);
-    http_response_header(response, "Content-Type", "application/json");
-    http_response_body(response, buf, (int) ctx.written);
-    http_respond(request, response);
-
-    free(buf);
+  if(out == NULL) {
+    return WARTERAUM_INTERNAL_ERROR;
   }
+
+  ej_init(&ctx, out);
+
+  ej_object(&ctx);
+  EJ_STATIC_BIND(&ctx, "id");
+  ej_uint(&ctx, flip_queue.last->id);
+  EJ_STATIC_BIND(&ctx, "text");
+  ej_string(&ctx, flip_queue.last->string, flip_queue.last->string_size);
+  ej_object_end(&ctx);
+
+  fclose(out);
+
+  http_response_status(response, 200);
+  http_response_header(response, "Content-Type", "application/json");
+  http_response_body(response, buf, (int) ctx.written);
+  http_respond(request, response);
+
+  free(buf);
 
   return WARTERAUM_OK;
 }
 
-// DELETE /api/v1/queue/del/<id>
 // DELETE /api/v2/queue/<id>
-enum warteraum_result response_queue_del(http_string_t id_str, enum warteraum_version v, http_request_t *request, http_response_t *response) {
-  (void) v; // surpress warning for now
-
+enum warteraum_result response_queue_del(http_string_t id_str, http_request_t *request, http_response_t *response) {
   http_string_t content_type = http_request_header(request, "Content-Type");
   http_string_t method = http_request_method(request);
 
@@ -401,38 +374,28 @@ void handle_request(http_request_t *request) {
   int count = split_segments(target, &segs);
 
   enum warteraum_result status = WARTERAUM_NOT_FOUND;
-  enum warteraum_version api_version;
-  bool v1_html_response = false;
 
   if(count < 0) {
     status = WARTERAUM_INTERNAL_ERROR;
   } else {
     if(SEGMENT_MATCH(0, "api", segs, count)) {
       if(SEGMENT_MATCH(1, "v1", segs, count)) {
-        api_version = WARTERAUM_API_V1;
-
         if(SEGMENT_MATCH(2, "queue", segs, count)) {
-          if(count == 3) {
-            status = response_queue(api_version, request, response);
-          } else if(SEGMENT_MATCH_LAST(3, "add", segs, count)) {
-            // this endpoint returns html in /api/v1
-            v1_html_response = true;
-            status = response_queue_add(api_version, request, response);
-          } else if(SEGMENT_MATCH(3, "del", segs, count) && count == 5) {
-            status = response_queue_del(segs[4], api_version, request, response);
+          if(count == 3
+             || SEGMENT_MATCH_LAST(3, "add", segs, count)
+             || (SEGMENT_MATCH(3, "del", segs, count) && count == 5)) {
+            status = WARTERAUM_UNSUPPORTED_API_VERSION;
           }
         }
       } else if(SEGMENT_MATCH(1, "v2", segs, count)) {
-        api_version = WARTERAUM_API_V2;
-
         if(SEGMENT_MATCH(2, "queue", segs, count)) {
           if(count == 3) {
-            status = response_queue(api_version, request, response);
+            status = response_queue(request, response);
           } else if(SEGMENT_MATCH_LAST(3, "add", segs, count)) {
-            status = response_queue_add(api_version, request, response);
+            status = response_queue_add(request, response);
           } else if(count == 4) {
             // /api/v2/queue/<id>
-            status = response_queue_del(segs[3], api_version, request, response);
+            status = response_queue_del(segs[3], request, response);
           }
         }
       }
@@ -442,7 +405,7 @@ void handle_request(http_request_t *request) {
   free(segs);
 
   if(status != WARTERAUM_OK) {
-    response_error(status, v1_html_response, request, response);
+    response_error(status, request, response);
   }
 }
 
