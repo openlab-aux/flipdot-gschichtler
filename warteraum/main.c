@@ -288,6 +288,10 @@ enum warteraum_result response_queue_add(http_request_t *request, http_response_
 
   free(buf);
 
+  fprintf(stderr, "add (id=%d): ", flip_queue.last->id);
+  fwrite(flip_queue.last->string, sizeof(char), flip_queue.last->string_size, stderr);
+  fputs("\n", stderr);
+
   return WARTERAUM_OK;
 }
 
@@ -363,6 +367,9 @@ enum warteraum_result response_queue_del(http_string_t id_str, http_request_t *r
   if(found) {
     http_response_status(response, 204);
     http_respond(request, response);
+
+    fprintf(stderr, "del (id=%d)\n", id);
+
     return WARTERAUM_OK;
   } else {
     return WARTERAUM_ENTRY_NOT_FOUND;
