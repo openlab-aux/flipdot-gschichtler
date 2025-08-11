@@ -136,6 +136,15 @@ void response_error(enum warteraum_result e, http_request_t *request, http_respo
   http_response_body(response, buf, static_buf ? buf_size : (int) ctx.written);
   http_respond(request, response);
 
+  // log some errors we wouldn't necessarily expect during normal operation
+  if(e == WARTERAUM_OK /* see above */
+     || e == WARTERAUM_INTERNAL_ERROR
+     || e == WARTERAUM_FULL_ERROR) {
+    fputs("err: ", stderr);
+    fwrite(errors[e].buf, sizeof(char), errors[e].len, stderr);
+    fputs("\n", stderr);
+  }
+
   if(!static_buf) {
     free(buf);
   }
