@@ -306,6 +306,10 @@ Changelog
 
 * `warteraum`
 ** Remove support for the `v1` API completely.
+** Additions to and deletions from the queue are logged to stderr now.
+   Note that queued strings aren't escaped before logging, so whatever
+   reads `warteraum`'s stderr should be able to deal with untrusted
+   input.
 
 2.1.0
 ~~~~~
