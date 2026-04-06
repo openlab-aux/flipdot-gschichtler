@@ -84,5 +84,5 @@ rec {
     };
   };
 
-  nixosModule = ./nixos/flipdot-gschichtler.nix;
+  nixosModule = ./nixos/warteraum.nix;
 }
