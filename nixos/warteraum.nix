@@ -3,44 +3,24 @@
 with lib;
 
 let
-  cfg = config.services.flipdot-gschichtler;
+  cfg = config.services.warteraum;
 
   flipdot-gschichtler = import ../. {
     inherit pkgs;
   };
-  importClause = "(import ../. { inherit pkgs; })";
 
   userGroupName = "warteraum";
 in {
   options = {
-    services.flipdot-gschichtler = {
-      enable = mkEnableOption "flipdot-gschichtler";
+    services.warteraum = {
+      enable = mkEnableOption "warteraum";
 
-      packages = {
-        warteraum = mkOption {
-          type = types.package;
-          default = flipdot-gschichtler.warteraum;
-          defaultText = literalExample "${importClause}.warteraum";
-          description = ''
-            <literal>warteraum</literal> derivation to use.
-          '';
-        };
-        bahnhofshalle = mkOption {
-          type = types.package;
-          default = flipdot-gschichtler.bahnhofshalle;
-          defaultText = literalExample "${importClause}.bahnhofshalle";
-          description = ''
-            <literal>bahnhofshalle</literal> derivation to use.
-          '';
-        };
-      };
-
-      virtualHost = mkOption {
-        type = types.str;
-        default = "localhost";
+      package = mkOption {
+        type = types.package;
+        default = flipdot-gschichtler.warteraum;
+        defaultText = literalExample "(import ../. { inherit pkgs; }).warteraum";
         description = ''
-          Virtual Host for nginx to use for serving
-          warteraum and bahnhofshalle.
+          <literal>warteraum</literal> derivation to use.
         '';
       };
 
@@ -80,7 +60,7 @@ in {
           "${pkgs.coreutils}/bin/env"
           "WARTERAUM_SALT_FILE=\${CREDENTIALS_DIRECTORY}/salt"
           "WARTERAUM_TOKENS_FILE=\${CREDENTIALS_DIRECTORY}/tokens"
-          "${cfg.packages.warteraum}/bin/warteraum"
+          "${lib.getExe' cfg.package "warteraum"}"
         ];
 
         LoadCredential = [
@@ -130,23 +110,12 @@ in {
       };
     };
 
-    services.nginx.virtualHosts."${cfg.virtualHost}" = {
-      enableACME = true;
-      forceSSL = true;
-      root = cfg.packages.bahnhofshalle;
-      extraConfig = ''
-        location /api {
-          proxy_pass http://127.0.0.1:9000/api;
-        }
-      '';
-    };
-
     users = {
       users."${userGroupName}"= {
         isSystemUser = true;
         group = userGroupName;
       };
-      groups."${userGroupName}"= {};
+      groups."${userGroupName}"= { };
     };
   };
 }

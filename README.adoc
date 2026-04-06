@@ -211,9 +211,7 @@ firefox dist/index.html # properly minified distribution
 
 Note that all requests are sent using a `same-origin` policy,
 so you need to configure a reverse proxy to serve the web
-frontend and API simuntaneously for testing. You may take
-inspiration from the `nginx` configuration in
-`nixos/flipdot-gschichtler.nix`.
+frontend and API simultaneously for testing.
 
 A note on vendoring
 ~~~~~~~~~~~~~~~~~~~
@@ -242,35 +240,37 @@ ready to be installed:
 Configuration
 ~~~~~~~~~~~~~
 
-`nixos/flipdot-gschichtler.nix` provides a NixOS module which
-defines `services.flipdot-gschichtler` to conveniently set up
-the server side with `warteraum` and `bahnhofshalle` behind
-a nginx reverse proxy. A minimal `configuration.nix` utilizing
-it could look like this:
+`nixos/warteraum.nix` provides a NixOS module which
+defines `services.warteraum` for running the warteraum service
+with reasonably reduced privileges. A minimal
+`configuration.nix` utilizing it could look like this:
 
 ---------------
 { pkgs, ... }:
 
+let
+  flipdot-gschichtler = …;
+in
+
 {
   imports = [
-    /path/to/flipdot-gschichtler/nixos/flipdot-gschichtler.nix
+    flipdot-gschichtler.nixosModule
   ];
 
-  services.flipdot-gschichtler = {
+  services.warteraum = {
     enable = true;
-    virtualHost = "flipdot.openlab-augsburg.de";
+    package = flipdot-gschichtler.warteraum;
     tokensFile = "/var/secrets/flipdot-gschichtler/tokens";
     saltFile = "/var/secrets/flipdot-gschichtler/salt";
-    # if you want to change the derivations to use
-    # packages = {
-    #   warteraum = …;
-    #   bahnhofshalle = …;
-    # };
   };
 
-  services.nginx.enable = true;
-  security.acme = {
-    ....
+  services.nginx.virtualHosts."flipdot.pseudo.invalid" = {
+    root = flipdot-gschichtler.bahnhofshalle;
+    extraConfig = ''
+      location /api {
+        proxy_pass http://127.0.0.1:9000/api;
+      }
+    '';
   };
 }
 ---------------
